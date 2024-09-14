@@ -54,25 +54,51 @@ const SubscribeForm = () => {
         }
     }, [formData.cartonsPerWeek, formData.wantsToDonate, formData.donationCartons, formData.eggCycle, formData.pickupSite, remainingWeeks]);
 
+    // const fetchCurrentCycles = async () => {
+    //     try {
+    //         const response = await fetch('/api/cycles');  
+    //         const cycles = await response.json();
+    //         const currentDate = new Date(); 
+    //         const filteredCycles = cycles.filter(cycle => {
+    //             const startDate = new Date(cycle.start_date);
+    //             const endDate = new Date(cycle.end_date);
+    //             const twoWeeksBeforeStart = new Date(startDate);
+    //             twoWeeksBeforeStart.setDate(startDate.getDate() - 14);
+    //             const twoWeeksBeforeEnd = new Date(endDate);
+    //             twoWeeksBeforeEnd.setDate(endDate.getDate() - 14);
+    //             return currentDate >= twoWeeksBeforeStart && currentDate <= twoWeeksBeforeEnd;
+    //         });
+    //         setAvailableCycles(filteredCycles);
+    //     } catch (error) {
+    //         console.error('Error fetching cycles:', error);
+    //     }
+    // };
     const fetchCurrentCycles = async () => {
         try {
             const response = await fetch('/api/cycles');  
             const cycles = await response.json();
-            const currentDate = new Date(); 
+            console.log(cycles);
+    
+            const currentDate = new Date();
             const filteredCycles = cycles.filter(cycle => {
                 const startDate = new Date(cycle.start_date);
                 const endDate = new Date(cycle.end_date);
+    
                 const twoWeeksBeforeStart = new Date(startDate);
                 twoWeeksBeforeStart.setDate(startDate.getDate() - 14);
+    
                 const twoWeeksBeforeEnd = new Date(endDate);
                 twoWeeksBeforeEnd.setDate(endDate.getDate() - 14);
+    
                 return currentDate >= twoWeeksBeforeStart && currentDate <= twoWeeksBeforeEnd;
             });
+    
             setAvailableCycles(filteredCycles);
         } catch (error) {
             console.error('Error fetching cycles:', error);
         }
     };
+    
 
     const fetchSites = async () => {
         try {
@@ -285,7 +311,6 @@ const SubscribeForm = () => {
                             </option>
                         ))}
                     </select>
-
                     <label>Select Pickup Site:</label>
                     <select name="pickupSite" value={formData.pickupSite} onChange={handleChange} required>
                         <option value="">Select a site...</option>

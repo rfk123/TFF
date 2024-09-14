@@ -13,7 +13,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
         setUser(currentUser);
 
         if (requireAdmin) {
-          setLoading(true); // Ensure loading is true while checking admin status
+          setLoading(true); 
           const adminStatus = await checkIfAdmin(currentUser.uid);
           setIsAdmin(adminStatus);
         }
@@ -24,22 +24,22 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
       setLoading(false);
     });
 
-    return () => unsubscribe(); // Cleanup subscription on component unmount
+    return () => unsubscribe(); 
   }, [requireAdmin]);
 
   if (loading) {
-    return <div>Loading...</div>; // Ensure loading state while checking
+    return <div>Loading...</div>; 
   }
 
   if (!user) {
-    return <Navigate to="/login" />; // Redirect to login if user is not authenticated
+    return <Navigate to="/login" />; 
   }
 
   if (requireAdmin && !isAdmin) {
-    return <Navigate to="/" />; // Redirect non-admin users to the home page
+    return <Navigate to="/" />; 
   }
 
-  return children; // Allow access to the protected route
+  return children; 
 };
 
 export default ProtectedRoute;

@@ -9,7 +9,7 @@ const Header = () => {
   const [user, setUser] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false); 
-  const [adminLoading, setAdminLoading] = useState(true); // Loading state for admin check
+  const [adminLoading, setAdminLoading] = useState(true); 
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,10 +22,10 @@ const Header = () => {
         const adminStatus = await checkIfAdmin(user.uid); 
         setIsAdmin(adminStatus); 
       } else {
-        setIsAdmin(false); // Reset admin state if no user
+        setIsAdmin(false); 
       }
 
-      setAdminLoading(false); // Set loading to false after the check
+      setAdminLoading(false); 
     });
 
     return () => unsubscribe(); 
