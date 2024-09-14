@@ -31,5 +31,8 @@
     "util": "^0.12.5",
     "uuid": "^10.0.0",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
   }
 }
