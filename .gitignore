@@ -37,7 +37,8 @@ yarn-error.log*
 npm-debug.log*
 
 # Dependency directories
-client/node_modules
+client/node_modules/
+client/build/
 backend/node_modules
 
 # React specific

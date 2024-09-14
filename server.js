@@ -1,20 +1,25 @@
+require('dotenv').config();
+
 const express = require('express');
 const app = express();
 const Stripe = require('stripe');
-const stripe = Stripe('sk_test_51PyKkL08zoYgSJYV6MKjG6VgwRVVskN2GnUBmp9iGEtM6gF4BxkydWPHMKWxwmnHxnZE9gbttRvCNlcOmmBXI9Yd00luCmmehM'); // Hardcoded Stripe key
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const mysql = require('mysql2');
 const nodemailer = require('nodemailer'); 
 const xlsx = require('xlsx');
 const fs = require('fs');
 const axios = require('axios');
+const path = require('path');
+
+app.use(express.static(path.join(__dirname, 'client/build')));
 
 // MySQL connection pool
 const db = mysql.createPool({
-    host: '132.148.214.50',
-    user: 'commerce',
-    password: '123DozenEggs!',
-    database: 'tff_eggshop',
-    port: 3306,
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_DATABASE,
+    port: process.env.DB_PORT || 3306,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
@@ -24,8 +29,8 @@ const db = mysql.createPool({
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'trentfamilyfarms@gmail.com',
-        pass: 'xxsu mrde vsqx ptzm'  
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD  
     }
 });
 
@@ -109,7 +114,10 @@ app.post('/create-checkout-session', async (req, res) => {
     console.log('Received data from frontend:', req.body);
 
     const { userId, name, email, amount, cartonsPerWeek, pickupSite, donationCartons, eggCycle } = req.body; // Added email here
-
+    // const protocol = req.protocol;
+    // const host = req.get('host');
+    // const CLIENT_URL = `${protocol}://${host}`;
+    const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:4242';
     if (!userId || !name || !amount || !cartonsPerWeek || !pickupSite || !eggCycle || !email) {  // Check if email is passed
         console.log('Missing required fields:', req.body);
         return res.status(400).send('Missing required fields');
@@ -138,8 +146,8 @@ app.post('/create-checkout-session', async (req, res) => {
                 },
             ],
             mode: 'payment',
-            success_url: 'http://localhost:3000/success',
-            cancel_url: 'http://localhost:3000/cancel',
+            success_url: `${CLIENT_URL}/success`,
+            cancel_url: `${CLIENT_URL}/cancel`,
             metadata: {
                 userId,
                 name,
@@ -465,91 +473,6 @@ app.get('/api/cycles', (req, res) => {
     });
 });
 
-// app.get('/api/admin/download-orders/:cycleId/:siteId', (req, res) => {
-//     const cycleId = decodeURIComponent(req.params.cycleId);  // Decode cycle name
-//     const siteId = decodeURIComponent(req.params.siteId);  // Decode site ID
-
-//     console.log(Received cycleId: ${cycleId}, siteId: ${siteId});
-
-//     const query = 
-//         SELECT s.name, s.cartons_per_week, st.site_name, st.site_address, c.cycle_name
-//         FROM subscriptions s
-//         JOIN sites st ON s.pickup_site = st.site_id
-//         JOIN cycles c ON s.cycle_id = c.cycle_id
-//         WHERE c.cycle_name = ? AND s.pickup_site = ?
-//     ;
-
-//     db.query(query, [cycleId, siteId], (err, results) => {
-//         if (err) {
-//             console.error('Error fetching subscriptions:', err);
-//             return res.status(500).json({ error: 'Error fetching subscriptions' });
-//         }
-
-//         if (results.length === 0) {
-//             return res.status(404).json({ error: 'No subscriptions found for this cycle and location' });
-//         }
-
-//         console.log(Fetched ${results.length} subscriptions for cycleId: ${cycleId}, siteId: ${siteId});
-
-//         // Prepare the workbook and sheet
-//         const workbook = xlsx.utils.book_new();
-
-//         // Retrieve cycle name and site details from the first result
-//         const cycleName = results[0].cycle_name.replace(/[^\w\s]/gi, '_');
-//         const siteName = results[0].site_name.replace(/[^\w\s]/gi, '_');
-//         const siteAddress = results[0].site_address.replace(/[^\w\s]/gi, '_');
-
-//         const sheetTitle = TFF EGG CSA ${cycleName} - ${siteName} - ${siteAddress};
-//         console.log(Generated sheet title: ${sheetTitle});
-
-//         // Add title and header row to the sheet
-//         const worksheet = xlsx.utils.aoa_to_sheet([
-//             [sheetTitle],  // Title row
-//             ['Name', '# of Cartons', ...Array(11).fill('.')]  // Header row with 11 empty columns
-//         ]);
-
-//         // Add subscription data to the sheet
-//         results.forEach(sub => {
-//             const row = [
-//                 sub.name,
-//                 sub.cartons_per_week,
-//                 ...Array(11).fill('')  // 11 empty cells for weekly checkoffs
-//             ];
-//             xlsx.utils.sheet_add_aoa(worksheet, [row], { origin: -1 });
-//         });
-
-//         // Add the worksheet to the workbook
-//         xlsx.utils.book_append_sheet(workbook, worksheet, cycleName);
-
-//         console.log(Workbook created successfully for cycleId: ${cycleId}, siteId: ${siteId});
-
-//         try {
-//             // Write the workbook to a buffer
-//             const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-
-//             // Validate buffer size and ensure it's valid
-//             if (!buffer || buffer.length === 0) {
-//                 console.error('Failed to generate a valid Excel buffer');
-//                 return res.status(500).send('Error generating Excel file');
-//             }
-
-//             console.log(Generated buffer with size: ${buffer.length});
-
-//             // Set headers to download the file
-//             const filename = orders-${cycleName}-${siteName}.xlsx;
-//             res.setHeader('Content-Disposition', attachment; filename="${filename}");
-//             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-
-//             // Send the buffer as a response
-//             res.send(buffer);
-//             console.log(File sent: ${filename});
-//         } catch (error) {
-//             console.error('Error generating or sending Excel file:', error);
-//             return res.status(500).json({ error: 'Error generating or sending Excel file' });
-//         }
-//     });
-// });
-
 app.get('/api/admin/download-orders/:cycleId/:siteId', (req, res) => {
     const cycleId = decodeURIComponent(req.params.cycleId);  // Decode cycle name
     const siteId = decodeURIComponent(req.params.siteId);  // Decode site ID
@@ -724,6 +647,10 @@ app.put('/api/admin/cycles/:id', (req, res) => {
         res.status(200).send('Cycle dates updated successfully');
     });
 });
+
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+})
 
 // Start the server
 const PORT = process.env.PORT || 4242;
