@@ -1,0 +1,60 @@
+.home-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f2f2f2;  /* Light gray background for cleanliness */
+}
+
+.home-content {
+  text-align: center;
+  background: #fff;
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  width: 100%;
+  margin-bottom: 3rem;
+}
+
+.home-content h1 {
+  font-size: 2.2rem;
+  margin-bottom: 1.5rem;
+  color: #2f4f4f;  /* Dark green/gray for a natural, professional look */
+}
+
+.home-content p {
+  font-size: 1.2rem;
+  margin-bottom: 2.5rem;
+  color: #555;  /* Slightly darker gray for text */
+}
+
+.home-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.home-btn {
+  padding: 0.9rem 2rem;
+  background-color: #4CAF50;  /* Green matching your brand */
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: background-color 0.3s ease;
+}
+
+.home-btn:hover {
+  background-color: #45a049;
+}
+
+.secondary-btn {
+  background-color: #6c757d;  /* Neutral gray for secondary button */
+}
+
+.secondary-btn:hover {
+  background-color: #5a6268;
+}

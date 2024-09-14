@@ -1,0 +1,197 @@
+.subscribe-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f5f5f5;
+    padding: 20px;
+}
+
+.subscribe-content {
+    text-align: center;
+    background: #fff;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    width: 100%;
+}
+
+.subscribe-title {
+    font-size: 2rem;
+    font-weight: 400;
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+.subscribe-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+label {
+    font-size: 1.1rem;
+    color: #333;
+    text-align: left;
+    margin-top: 1.5rem;
+    margin-bottom: 0;
+}
+
+.carton-info {
+    font-size: 0.9rem;
+    color: #666;
+    margin-left: 10px;
+    font-style: italic;
+}
+
+select, input, textarea {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+    background-color: #f0f0f0; 
+    box-sizing: border-box;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.subscribe-btn {
+    padding: 0.8rem 1.5rem;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 1rem;
+}
+
+.subscribe-btn:hover {
+    background-color: #45a049;
+}
+
+.info-icon {
+    cursor: pointer;
+    margin-left: 10px;
+    color: #4caf50;
+    font-size: 1.2rem;
+}
+
+/* Popup with donation info */
+.donation-info-popup {
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 5px;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.order-total {
+    margin-top: 20px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #333;
+}
+
+/* Media query for smaller screens */
+@media (max-width: 768px) {
+    .subscribe-content {
+        padding: 1.5rem;
+        max-width: 90%;
+    }
+
+    .subscribe-title {
+        font-size: 1.8rem;
+    }
+
+    select, input, textarea {
+        font-size: 0.9rem;
+        padding: 8px;
+    }
+
+    .subscribe-btn {
+        font-size: 0.9rem;
+        padding: 0.7rem 1.3rem;
+    }
+}
+
+
+/* General form container styles */
+.subscribe-form {
+    margin-bottom: 30px; /* Add space between the two forms */
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+/* Adjust margins for headings */
+.closest-pickup-form h2,
+.subscribe-form h1 {
+    margin-bottom: 20px;
+}
+
+.closest-pickup-form {
+    margin-right: 6rem;
+    margin-bottom: 40vh;
+}
+
+/* Input and select styles */
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+/* Button styles */
+button {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+/* Styling for the nearest site display */
+.nearest-site {
+    margin-top: 15px;
+    font-weight: bold;
+    color: #333;
+}
+
+/* Donation info popup styling */
+.donation-info-popup {
+    background-color: #f1f1f1;
+    padding: 10px;
+    border-left: 5px solid #007bff;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+/* Order total styling */
+.order-total {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+
