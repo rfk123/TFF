@@ -8,17 +8,15 @@
   border-bottom: 1px solid #4caf50;
 }
 
-/* Flex container for the navigation */
 .header-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 1rem; 
 }
 
-/* Logo styles */
 .nav-logo {
   font-family: "Indie Flower", cursive;
   font-size: 1.5rem;
@@ -27,14 +25,12 @@
   text-decoration: none;
 }
 
-/* Navigation links container */
 .nav-links {
   display: flex;
   align-items: center;
   gap: 1.5rem;
 }
 
-/* Individual navigation link */
 .nav-link {
   color: #4caf50;
   font-size: 1rem;
@@ -50,7 +46,6 @@
   color: #fff;
 }
 
-/* Profile dropdown container */
 .profile-dropdown {
   position: relative;
 }
@@ -71,7 +66,7 @@
   border-radius: 5px;
   z-index: 100;
   width: 150px;
-  padding: 0.5rem 0;
+  padding: 0.5rem 0; 
 }
 
 .dropdown-item {
@@ -104,57 +99,4 @@
   background-color: #4caf50;
   color: #fff;
   border-radius: 5px;
-}
-
-/* Responsive styles for screens up to 768px */
-@media (max-width: 768px) {
-  .header-nav {
-    position: relative;
-  }
-
-  /* Hide the nav-links by default on mobile */
-  .nav-links {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background-color: #fff;
-    flex-direction: column;
-    align-items: center;
-    gap: 0;
-    display: none;
-    border-bottom: 1px solid #ccc;
-  }
-
-  /* Show nav-links when active */
-  .nav-links.active {
-    display: flex;
-  }
-
-  .nav-link {
-    width: 100%;
-    text-align: center;
-    border: none;
-    border-bottom: 1px solid #eee;
-  }
-
-  /* Hide the profile dropdown on mobile */
-  .profile-dropdown {
-    display: none;
-  }
-
-  /* Adjust the menu icon */
-  .menu-icon {
-    display: block;
-    font-size: 2rem;
-    color: #4caf50;
-    cursor: pointer;
-  }
-}
-
-/* Hide the menu icon on larger screens */
-@media (min-width: 769px) {
-  .menu-icon {
-    display: none;
-  }
 }
