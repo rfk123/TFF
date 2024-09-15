@@ -265,122 +265,169 @@ const SubscribeForm = () => {
 
     return (
         <div className="subscribe-container">
-            {/* First Section - Closest Pickup Location Form */}
-            <div className="closest-pickup-form">
-                <h2>Want to Find the Closest Pickup Location?</h2>
-                <label>Enter Your Address (Format: Street, City, State, ZIP):</label>
-                <input
-                    type="text"
-                    name="userAddress"
-                    value={userAddress}
-                    onChange={(e) => setUserAddress(e.target.value)}
-                    placeholder="e.g., 123 Main St, Portland, OR, 97201"
-                />
-                <button type="button" onClick={handleFindClosestSite}>
-                    Find Closest Pickup Site
-                </button>
-
-                {/* Display nearest site */}
-                {nearestSite && (
-                    <div className="nearest-site">
-                        <strong>Nearest Pickup Site:</strong> {nearestSite}
-                    </div>
-                )}
-            </div>
-
-            {/* Second Section - Subscription Form */}
-            <div className="subscribe-content">
-                <h1 className="subscribe-title">Subscribe to Our Egg Pickup</h1>
-                <form className="subscribe-form" onSubmit={handleSubmit}>
-                    <label>Your Name:</label>
-                    <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="Enter your name"
-                        required
-                    />
-
-                    <label>Select Egg Cycle:</label>
-                    <select name="eggCycle" value={formData.eggCycle} onChange={handleChange} required>
-                        <option value="">Select a cycle...</option>
-                        {availableCycles.map((cycle) => (
-                            <option key={cycle.cycle_id} value={cycle.cycle_id}>
-                                {cycle.cycle_name} ({new Date(cycle.start_date).toLocaleDateString()} - {new Date(cycle.end_date).toLocaleDateString()})
-                            </option>
-                        ))}
-                    </select>
-                    <label>Select Pickup Site:</label>
-                    <select name="pickupSite" value={formData.pickupSite} onChange={handleChange} required>
-                        <option value="">Select a site...</option>
-                        {availableSites.map((site) => (
-                            <option key={site.site_id} value={site.site_id}>
-                                {site.site_name}
-                            </option>
-                        ))}
-                    </select>
-
-                    <label>How Many Cartons of Eggs Per Week? <span className="carton-info">(Each carton is ${cartonPrice})</span></label>
-                    <input
-                        type="number"
-                        name="cartonsPerWeek"
-                        value={formData.cartonsPerWeek}
-                        onChange={handleChange}
-                        placeholder="Enter number of cartons"
-                        min="1"
-                        max="30"
-                        required
-                    />
-
-                    <label>Would You Like to Donate Eggs to Those in Need? 
-                        <span className="info-icon" onClick={() => setShowDonationInfo(!showDonationInfo)}>more info</span>
-                    </label>
-                    {showDonationInfo && (
-                        <div className="donation-info-popup">
-                            If you would like to make some of these delicious, nutritious eggs available to people living on low incomes, we are also collecting contributions for additional weekly subscriptions to donate eggs to Collectiva de la Comida, a neighborhood food pantry serving low income families in the NE Cully neighborhood, or to NE Emergency Food Program. Any additional financial donation you make now will go toward those subscriptions.
-                        </div>
-                    )}
-                    <select name="wantsToDonate" value={formData.wantsToDonate} onChange={handleChange} required>
-                        <option value="no">No</option>
-                        <option value="yes">Yes</option>
-                    </select>
-
-                    {formData.wantsToDonate === 'yes' && (
-                        <>
-                            <label>How Many Total Cartons Would You Like to Donate? <span className="carton-info">(Each carton is ${cartonPrice})</span></label>
-                            <input
-                                type="number"
-                                name="donationCartons"
-                                value={formData.donationCartons}
-                                onChange={handleChange}
-                                placeholder="Enter number of cartons to donate"
-                                min="0"
-                                max="30"
-                                required
-                            />
-                        </>
-                    )}
-
-                    <label>Additional Notes (Optional):</label>
-                    <textarea
-                        name="notes"
-                        value={formData.notes}
-                        onChange={handleChange}
-                        placeholder="Any additional notes..."
-                    />
-
-                    {showTotal && (
-                        <div className="order-total">
-                            <h3>Your Total: ${orderTotal}</h3>
-                        </div>
-                    )}
-
-                    <button className="subscribe-btn" type="submit">Continue to Payment</button>
-                </form>
-            </div>
+          {/* Closest Pickup Location Form */}
+          <div className="form-section closest-pickup-form">
+            <h2>Find the Closest Pickup Location</h2>
+            <form onSubmit={(e) => e.preventDefault()}>
+              <label htmlFor="userAddress">Enter Your Address (Format: Street, City, State, ZIP):</label>
+              <input
+                type="text"
+                id="userAddress"
+                name="userAddress"
+                value={userAddress}
+                onChange={(e) => setUserAddress(e.target.value)}
+                placeholder="e.g., 123 Main St, Portland, OR, 97201"
+              />
+              <button type="button" onClick={handleFindClosestSite}>
+                Find Closest Pickup Site
+              </button>
+            </form>
+      
+            {/* Display nearest site */}
+            {nearestSite && (
+              <div className="nearest-site">
+                <strong>Nearest Pickup Site:</strong> {nearestSite}
+              </div>
+            )}
+          </div>
+      
+          {/* Subscription Form */}
+          <div className="form-section subscribe-content">
+            <h1>Subscribe to Our Egg Pickup</h1>
+            <form onSubmit={handleSubmit}>
+              <label htmlFor="name">Your Name:</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Enter your name"
+                required
+              />
+      
+              <label htmlFor="eggCycle">Select Egg Cycle:</label>
+              <select
+                id="eggCycle"
+                name="eggCycle"
+                value={formData.eggCycle}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Select a cycle...</option>
+                {availableCycles.map((cycle) => (
+                  <option key={cycle.cycle_id} value={cycle.cycle_id}>
+                    {cycle.cycle_name} ({new Date(cycle.start_date).toLocaleDateString()} -{' '}
+                    {new Date(cycle.end_date).toLocaleDateString()})
+                  </option>
+                ))}
+              </select>
+      
+              <label htmlFor="pickupSite">Select Pickup Site:</label>
+              <select
+                id="pickupSite"
+                name="pickupSite"
+                value={formData.pickupSite}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Select a site...</option>
+                {availableSites.map((site) => (
+                  <option key={site.site_id} value={site.site_id}>
+                    {site.site_name}
+                  </option>
+                ))}
+              </select>
+      
+              <label htmlFor="cartonsPerWeek">
+                How Many Cartons of Eggs Per Week?{' '}
+                <span className="carton-info">(Each carton is ${cartonPrice})</span>
+              </label>
+              <input
+                type="number"
+                id="cartonsPerWeek"
+                name="cartonsPerWeek"
+                value={formData.cartonsPerWeek}
+                onChange={handleChange}
+                placeholder="Enter number of cartons"
+                min="1"
+                max="30"
+                required
+              />
+      
+              <label htmlFor="wantsToDonate">
+                Would You Like to Donate Eggs to Those in Need?
+                <span
+                  className="info-icon"
+                  onClick={() => setShowDonationInfo(!showDonationInfo)}
+                >
+                  more info
+                </span>
+              </label>
+              {showDonationInfo && (
+                <div className="donation-info-popup">
+                  If you would like to make some of these delicious, nutritious eggs
+                  available to people living on low incomes, we are also collecting
+                  contributions for additional weekly subscriptions to donate eggs to
+                  Collectiva de la Comida, a neighborhood food pantry serving low income
+                  families in the NE Cully neighborhood, or to NE Emergency Food Program.
+                  Any additional financial donation you make now will go toward those
+                  subscriptions.
+                </div>
+              )}
+              <select
+                id="wantsToDonate"
+                name="wantsToDonate"
+                value={formData.wantsToDonate}
+                onChange={handleChange}
+                required
+              >
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+      
+              {formData.wantsToDonate === 'yes' && (
+                <>
+                  <label htmlFor="donationCartons">
+                    How Many Total Cartons Would You Like to Donate?{' '}
+                    <span className="carton-info">(Each carton is ${cartonPrice})</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="donationCartons"
+                    name="donationCartons"
+                    value={formData.donationCartons}
+                    onChange={handleChange}
+                    placeholder="Enter number of cartons to donate"
+                    min="0"
+                    max="30"
+                    required
+                  />
+                </>
+              )}
+      
+              <label htmlFor="notes">Additional Notes (Optional):</label>
+              <textarea
+                id="notes"
+                name="notes"
+                value={formData.notes}
+                onChange={handleChange}
+                placeholder="Any additional notes..."
+              />
+      
+              {showTotal && (
+                <div className="order-total">
+                  <h3>Your Total: ${orderTotal}</h3>
+                </div>
+              )}
+      
+              <button className="subscribe-btn" type="submit">
+                Continue to Payment
+              </button>
+            </form>
+          </div>
         </div>
-    );
+      );      
 };
 
 // Wrap the form with Stripe Elements
