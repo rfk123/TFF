@@ -11,6 +11,15 @@ const fs = require('fs');
 const axios = require('axios');
 const path = require('path');
 
+
+// HTTPS Redirection Middleware
+app.use((req, res, next) => {
+    if (process.env.NODE_ENV === 'production' && req.headers['x-forwarded-proto'] !== 'https') {
+      return res.redirect(`https://${req.headers.host}${req.url}`);
+    }
+    next();
+  });
+
 app.use(express.static(path.join(__dirname, 'client/build')));
 
 // PostgreSQL connection pool
@@ -218,24 +227,6 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (request, respon
     response.status(200).send('Webhook received');
   }
 });
-
-// Route to get all subscriptions for admin
-// app.get('/api/admin/subscriptions', (req, res) => {
-//   const query = `
-//     SELECT s.user_id, s.name, s.cartons_per_week, c.cycle_name AS egg_cycle, st.site_name AS pickup_site, s.total_amount, s.cycle_id 
-//     FROM subscriptions s
-//     JOIN cycles c ON s.cycle_id = c.cycle_id
-//     JOIN sites st ON s.pickup_site = st.site_id
-//   `;
-
-//   pool.query(query, (err, result) => {
-//     if (err) {
-//       console.error('Error fetching subscriptions:', err);
-//       return res.status(500).json({ error: 'Error fetching subscriptions' });
-//     }
-//     res.json(result.rows);
-//   });
-// });
 
 // Fetch subscriptions for admin
 app.get('/api/admin/subscriptions', (req, res) => {
@@ -460,16 +451,6 @@ app.get('/api/admin/carton-price', (req, res) => {
   });
 });
 
-// app.get('/api/cycles', (req, res) => {
-//   const query = 'SELECT cycle_id, cycle_name, start_date, end_date, number_of_weeks FROM cycles';
-//   pool.query(query, (err, result) => {
-//     if (err) {
-//       console.error('Error fetching cycles:', err);
-//       return res.status(500).send('Error fetching cycles');
-//     }
-//     res.json(result.rows); // Return the cycles with the number of weeks
-//   });
-// });
 app.get('/api/cycles', (req, res) => {
     const query = 'SELECT cycle_id, cycle_name, start_date, end_date, number_of_weeks FROM cycles';
     pool.query(query, (err, result) => {
@@ -480,72 +461,6 @@ app.get('/api/cycles', (req, res) => {
         res.json(result.rows); // Return the cycles
     });
 });
-
-
-// app.get('/api/admin/download-orders/:cycleId/:siteId', (req, res) => {
-//   const cycleId = decodeURIComponent(req.params.cycleId);  // Decode cycle name
-//   const siteId = decodeURIComponent(req.params.siteId);  // Decode site ID
-
-//   console.log(`Received cycleId: ${cycleId}, siteId: ${siteId}`);
-
-//   const query = `
-//     SELECT s.name, s.cartons_per_week, st.site_name, st.site_address, c.cycle_name
-//     FROM subscriptions s
-//     JOIN sites st ON s.pickup_site = st.site_id
-//     JOIN cycles c ON s.cycle_id = c.cycle_id
-//     WHERE c.cycle_name = $1 AND s.pickup_site = $2
-//   `;
-
-//   pool.query(query, [cycleId, siteId], (err, result) => {
-//     if (err) {
-//       console.error('Error fetching subscriptions:', err);
-//       return res.status(500).json({ error: 'Error fetching subscriptions' });
-//     }
-
-//     if (result.rows.length === 0) {
-//       return res.status(404).json({ error: 'No subscriptions found for this cycle and location' });
-//     }
-
-//     // Calculate total number of cartons
-//     const totalCartons = result.rows.reduce((sum, sub) => sum + sub.cartons_per_week, 0);
-
-//     // Prepare the workbook and sheet as you already have
-//     const workbook = xlsx.utils.book_new();
-
-//     const cycleName = result.rows[0].cycle_name.replace(/[^\w\s]/gi, '_');
-//     const siteName = result.rows[0].site_name.replace(/[^\w\s]/gi, '_');
-//     const siteAddress = result.rows[0].site_address.replace(/[^\w\s]/gi, '_');
-    
-//     const sheetTitle = `TFF EGG CSA (${cycleName}) - (${siteName}) - (${siteAddress})`;
-
-//     const worksheet = xlsx.utils.aoa_to_sheet([
-//       [sheetTitle],
-//       ['Name', '# of Cartons', ...Array(11).fill('.')]  // Header row
-//     ]);
-
-//     result.rows.forEach(sub => {
-//       const row = [
-//         sub.name,
-//         sub.cartons_per_week,
-//         ...Array(11).fill('')  // Empty cells for weekly checkoffs
-//       ];
-//       xlsx.utils.sheet_add_aoa(worksheet, [row], { origin: -1 });
-//     });
-
-//     xlsx.utils.book_append_sheet(workbook, worksheet, cycleName);
-
-//     // Write workbook to buffer
-//     const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-
-//     // Send buffer, totalCartons, and results in the response
-//     res.json({
-//       success: true,
-//       totalCartons,
-//       filename: `orders-${cycleName}-${siteName}.xlsx`,
-//       data: buffer.toString('base64') // Convert buffer to base64 to send as JSON
-//     });
-//   });
-// });
 
 // Download orders for a specific cycle and site
 app.get('/api/admin/download-orders/:cycleId/:siteId', (req, res) => {
@@ -615,29 +530,6 @@ app.get('/api/admin/download-orders/:cycleId/:siteId', (req, res) => {
   });  
   
 
-// app.get('/api/admin/total-cartons/:cycleId/:siteId', (req, res) => {
-//   const cycleId = decodeURIComponent(req.params.cycleId);  // Decode cycle name
-//   const siteId = decodeURIComponent(req.params.siteId);  // Decode site ID
-
-//   const query = `
-//     SELECT SUM(s.cartons_per_week) AS totalCartons
-//     FROM subscriptions s
-//     JOIN sites st ON s.pickup_site = st.site_id
-//     JOIN cycles c ON s.cycle_id = c.cycle_id
-//     WHERE c.cycle_name = $1 AND s.pickup_site = $2
-//   `;
-
-//   pool.query(query, [cycleId, siteId], (err, result) => {
-//     if (err) {
-//       console.error('Error fetching total cartons:', err);
-//       return res.status(500).json({ error: 'Error fetching total cartons' });
-//     }
-
-//     const totalCartons = result.rows[0]?.totalcartons || 0; // Default to 0 if no results
-//     res.json({ totalCartons });
-//   });
-// });
-
 // Fetch total cartons for a specific cycle and site
 app.get('/api/admin/total-cartons/:cycleId/:siteId', (req, res) => {
     // Decode and parse the route parameters
@@ -685,29 +577,6 @@ app.put('/api/admin/carton-price', (req, res) => {
 });
 
 // Route to add a new cycle
-// app.post('/api/admin/cycles', (req, res) => {
-//   const { cycle_name, start_date, end_date, number_of_weeks } = req.body;
-
-//   // Input validation
-//   if (!cycle_name || !start_date || !end_date || !number_of_weeks) {
-//     return res.status(400).send('All fields are required');
-//   }
-
-//   const query = `
-//     INSERT INTO cycles (cycle_name, start_date, end_date, number_of_weeks)
-//     VALUES ($1, $2, $3, $4)
-//   `;
-
-//   pool.query(query, [cycle_name, start_date, end_date, number_of_weeks], (err, result) => {
-//     if (err) {
-//       console.error('Error adding new cycle:', err);
-//       return res.status(500).send('Error adding new cycle');
-//     }
-//     res.status(200).send('Cycle added successfully');
-//   });
-// });
-
-// Route to add a new cycle
 app.post('/api/admin/cycles', (req, res) => {
     const { cycle_name, start_date, end_date, number_of_weeks } = req.body;
   
@@ -737,27 +606,6 @@ app.post('/api/admin/cycles', (req, res) => {
     );
   });
   
-
-// Route to delete a cycle by ID
-// app.delete('/api/admin/cycles/:id', (req, res) => {
-//   const { id } = req.params;
-
-//   if (!id) {
-//     return res.status(400).send('Cycle ID is required');
-//   }
-
-//   const query = 'DELETE FROM cycles WHERE cycle_id = $1';
-
-//   pool.query(query, [id], (err, result) => {
-//     if (err) {
-//       console.error('Error deleting cycle:', err);
-//       return res.status(500).send('Error deleting cycle');
-//     }
-//     res.status(200).send('Cycle deleted successfully');
-//   });
-// });
-
-// Route to delete a cycle by ID
 app.delete('/api/admin/cycles/:id', (req, res) => {
     const { id } = req.params;
   
@@ -774,32 +622,8 @@ app.delete('/api/admin/cycles/:id', (req, res) => {
       }
       res.status(200).send('Cycle deleted successfully');
     });
-  });  
+ });  
 
-// Route to edit cycle start and end dates
-// app.put('/api/admin/cycles/:id', (req, res) => {
-//   const { id } = req.params;
-//   const { start_date, end_date } = req.body;
-
-//   // Input validation
-//   if (!start_date || !end_date) {
-//     return res.status(400).send('Start date and end date are required');
-//   }
-
-//   const query = `
-//     UPDATE cycles 
-//     SET start_date = $1, end_date = $2
-//     WHERE cycle_id = $3
-//   `;
-
-//   pool.query(query, [start_date, end_date, id], (err, result) => {
-//     if (err) {
-//       console.error('Error updating cycle dates:', err);
-//       return res.status(500).send('Error updating cycle dates');
-//     }
-//     res.status(200).send('Cycle dates updated successfully');
-//   });
-// });
 
 // Route to edit cycle start and end dates
 app.put('/api/admin/cycles/:id', (req, res) => {
