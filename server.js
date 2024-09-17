@@ -44,24 +44,45 @@ const transporter = nodemailer.createTransport({
 });
 
 // Email function to send confirmation
-const sendConfirmationEmail = (email, name, eggCycle, totalAmount) => {
-  console.log('Sending email for cycle:', eggCycle);  // Log eggCycle for debugging
+// const sendConfirmationEmail = (email, name, eggCycle, totalAmount) => {
+//   console.log('Sending email for cycle:', eggCycle);  // Log eggCycle for debugging
   
-  const mailOptions = {
-    from: 'your_email@gmail.com',
-    to: email,
-    subject: 'Subscription Confirmation',
-    text: `Hello ${name},\n\nThank you for subscribing to the ${eggCycle} cycle! Your payment of $${totalAmount} has been received.\n\nView more information on your order through your user profile!\n\nBest regards,\nThe Farm Team`
-  };
+//   const mailOptions = {
+//     from: 'your_email@gmail.com',
+//     to: email,
+//     subject: 'Subscription Confirmation',
+//     text: `Hello ${name},\n\nThank you for subscribing to the ${eggCycle} cycle! Your payment of $${totalAmount} has been received.\n\nView more information on your order through your user profile!\n\nBest regards,\nThe Farm Team`
+//   };
 
-  transporter.sendMail(mailOptions, (err, info) => {
-    if (err) {
-      console.error('Error sending email:', err);
-    } else {
-      console.log('Confirmation email sent:', info.response);
-    }
-  });
-};
+//   transporter.sendMail(mailOptions, (err, info) => {
+//     if (err) {
+//       console.error('Error sending email:', err);
+//     } else {
+//       console.log('Confirmation email sent:', info.response);
+//     }
+//   });
+// };
+
+const sendConfirmationEmail = (email, name, eggCycleName, pickupSiteName, pickupSiteAddress, pickupSiteInstructions, pickupStartDay, pickupDeadlineDay, totalAmount) => {
+    console.log('Sending email for cycle:', eggCycleName);  // Log eggCycleName for debugging
+    
+    const mailOptions = {
+      from: 'your_email@gmail.com',
+      to: email,
+      subject: 'Subscription Confirmation',
+      text: `Hello ${name},\n\nThank you for subscribing to the ${eggCycleName} cycle! 
+      Your payment of $${totalAmount} has been received.\n\nYou have selected the following pickup site:\n\n
+      Site: ${pickupSiteName}\nAddress: ${pickupSiteAddress}\nInstructions: ${pickupSiteInstructions}\nPickup Start Day: ${pickupStartDay}\nPickup Deadline Day: ${pickupDeadlineDay}\n\nView more information on your order through your user profile!\n\nBest regards,\nThe Farm Team`
+    };
+  
+    transporter.sendMail(mailOptions, (err, info) => {
+      if (err) {
+        console.error('Error sending email:', err);
+      } else {
+        console.log('Confirmation email sent:', info.response);
+      }
+    });
+  };  
 
 // Define the getCurrentCycle function before it is used
 const getCurrentCycle = (callback) => {
@@ -229,58 +250,137 @@ app.post('/create-checkout-session', async (req, res) => {
   
 
 // Stripe webhook requires raw body parsing
-app.post('/webhook', express.raw({ type: 'application/json' }), (request, response) => {
-  const sig = request.headers['stripe-signature'];
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+// app.post('/webhook', express.raw({ type: 'application/json' }), (request, response) => {
+//   const sig = request.headers['stripe-signature'];
+//   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  let event;
-  try {
-    event = stripe.webhooks.constructEvent(request.body, sig, webhookSecret);
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
-    return response.status(400).send(`Webhook Error: ${err.message}`);
-  }
+//   let event;
+//   try {
+//     event = stripe.webhooks.constructEvent(request.body, sig, webhookSecret);
+//   } catch (err) {
+//     console.error('Webhook signature verification failed:', err.message);
+//     return response.status(400).send(`Webhook Error: ${err.message}`);
+//   }
 
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    console.log('Session metadata:', session.metadata);
+//   if (event.type === 'checkout.session.completed') {
+//     const session = event.data.object;
+//     console.log('Session metadata:', session.metadata);
     
-    const insertQuery = `
-      INSERT INTO subscriptions (user_id, name, cartons_per_week, egg_cycle, pickup_site, total_amount, cycle_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-    `;
+//     const insertQuery = `
+//       INSERT INTO subscriptions (user_id, name, cartons_per_week, egg_cycle, pickup_site, total_amount, cycle_id)
+//       VALUES ($1, $2, $3, $4, $5, $6, $7)
+//     `;
   
-    // pool.query(insertQuery, [
-    //   session.metadata.userId,
-    //   session.metadata.name,
-    //   session.metadata.cartonsPerWeek,
-    //   session.metadata.eggCycle,
-    //   session.metadata.pickupSite,
-    //   session.amount_total / 100,
-    //   session.metadata.cycle_id
-    // ], (err, result) => {
-    pool.query(insertQuery, [
-    session.metadata.userId,
-    session.metadata.name,
-    parseInt(session.metadata.cartonsPerWeek, 10),
-    session.metadata.eggCycle,
-    parseInt(session.metadata.pickupSite, 10), // Ensure pickupSite is an integer
-    session.amount_total / 100,
-    parseInt(session.metadata.cycle_id, 10)
-    ], (err, result) => {
-      if (err) {
-        console.error('Error inserting subscription data:', err);
-        return response.status(500).send('Error inserting subscription data');
-      }
+//     // pool.query(insertQuery, [
+//     //   session.metadata.userId,
+//     //   session.metadata.name,
+//     //   session.metadata.cartonsPerWeek,
+//     //   session.metadata.eggCycle,
+//     //   session.metadata.pickupSite,
+//     //   session.amount_total / 100,
+//     //   session.metadata.cycle_id
+//     // ], (err, result) => {
+//     pool.query(insertQuery, [
+//     session.metadata.userId,
+//     session.metadata.name,
+//     parseInt(session.metadata.cartonsPerWeek, 10),
+//     session.metadata.eggCycle,
+//     parseInt(session.metadata.pickupSite, 10), // Ensure pickupSite is an integer
+//     session.amount_total / 100,
+//     parseInt(session.metadata.cycle_id, 10)
+//     ], (err, result) => {
+//       if (err) {
+//         console.error('Error inserting subscription data:', err);
+//         return response.status(500).send('Error inserting subscription data');
+//       }
       
-      // Send confirmation email
-      sendConfirmationEmail(session.customer_email, session.metadata.name, session.metadata.eggCycle, session.amount_total / 100);
-      response.status(200).send('Webhook received and email sent');
-    });
-  } else {
-    response.status(200).send('Webhook received');
-  }
-});
+//       // Send confirmation email
+//       sendConfirmationEmail(session.customer_email, session.metadata.name, session.metadata.eggCycle, session.amount_total / 100);
+//       response.status(200).send('Webhook received and email sent');
+//     });
+//   } else {
+//     response.status(200).send('Webhook received');
+//   }
+// });
+
+// Stripe webhook requires raw body parsing
+app.post('/webhook', express.raw({ type: 'application/json' }), (request, response) => {
+    const sig = request.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(request.body, sig, webhookSecret);
+    } catch (err) {
+      console.error('Webhook signature verification failed:', err.message);
+      return response.status(400).send(`Webhook Error: ${err.message}`);
+    }
+  
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      console.log('Session metadata:', session.metadata);
+      
+      const insertQuery = `
+        INSERT INTO subscriptions (user_id, name, cartons_per_week, egg_cycle, pickup_site, total_amount, cycle_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `;
+    
+      // Query to get the egg cycle name and full pickup site details
+      const cycleQuery = `
+        SELECT c.cycle_name, s.site_name, s.site_address, s.site_instructions, s.pickup_start_day, s.pickup_deadline_day 
+        FROM cycles c 
+        JOIN sites s ON s.site_id = $1
+        WHERE c.cycle_id = $2
+      `;
+  
+      pool.query(cycleQuery, [session.metadata.pickupSite, session.metadata.cycle_id], (err, result) => {
+        if (err) {
+          console.error('Error fetching cycle and site details:', err);
+          return response.status(500).send('Error fetching cycle and site details');
+        }
+  
+        const eggCycleName = result.rows[0].cycle_name;
+        const pickupSiteName = result.rows[0].site_name;
+        const pickupSiteAddress = result.rows[0].site_address;
+        const pickupSiteInstructions = result.rows[0].site_instructions;
+        const pickupStartDay = result.rows[0].pickup_start_day;
+        const pickupDeadlineDay = result.rows[0].pickup_deadline_day;
+  
+        // Insert the subscription data
+        pool.query(insertQuery, [
+          session.metadata.userId,
+          session.metadata.name,
+          parseInt(session.metadata.cartonsPerWeek, 10),
+          session.metadata.eggCycle,
+          parseInt(session.metadata.pickupSite, 10),
+          session.amount_total / 100,
+          parseInt(session.metadata.cycle_id, 10)
+        ], (err, result) => {
+          if (err) {
+            console.error('Error inserting subscription data:', err);
+            return response.status(500).send('Error inserting subscription data');
+          }
+  
+          // Send confirmation email with full site details
+          sendConfirmationEmail(
+            session.customer_email,
+            session.metadata.name,
+            eggCycleName,                    // Pass the actual cycle name
+            pickupSiteName,                  // Pass the site name
+            pickupSiteAddress,               // Pass the site address
+            pickupSiteInstructions,          // Pass the site instructions
+            pickupStartDay,                  // Pass the start day
+            pickupDeadlineDay,               // Pass the deadline day
+            session.amount_total / 100       // Total amount
+          );
+          response.status(200).send('Webhook received and email sent');
+        });
+      });
+    } else {
+      response.status(200).send('Webhook received');
+    }
+  });
+  
 
 // Fetch subscriptions for admin
 app.get('/api/admin/subscriptions', (req, res) => {
