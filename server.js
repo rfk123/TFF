@@ -177,7 +177,7 @@ app.post('/create-checkout-session', async (req, res) => {
 // Stripe webhook requires raw body parsing
 app.post('/webhook', express.raw({ type: 'application/json' }), (request, response) => {
   const sig = request.headers['stripe-signature'];
-  const webhookSecret = 'whsec_BQxzq0gxntIwLuUM1dX9W1E2M8SsUhBb';
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   let event;
   try {
