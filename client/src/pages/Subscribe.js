@@ -357,14 +357,7 @@ const SubscribeForm = () => {
       
               <label htmlFor="wantsToDonate">
                 Would You Like to Donate Eggs to Those in Need?
-                <span
-                  className="info-icon"
-                  onClick={() => setShowDonationInfo(!showDonationInfo)}
-                >
-                  more info
-                </span>
               </label>
-              {showDonationInfo && (
                 <div className="donation-info-popup">
                   If you would like to make some of these delicious, nutritious eggs
                   available to people living on low incomes, we are also collecting
@@ -374,7 +367,6 @@ const SubscribeForm = () => {
                   Any additional financial donation you make now will go toward those
                   subscriptions.
                 </div>
-              )}
               <select
                 id="wantsToDonate"
                 name="wantsToDonate"
@@ -405,7 +397,7 @@ const SubscribeForm = () => {
                   />
                 </>
               )}
-      
+
               <label htmlFor="notes">Additional Notes (Optional):</label>
               <textarea
                 id="notes"
