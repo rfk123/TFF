@@ -72,7 +72,7 @@ const sendConfirmationEmail = (email, name, eggCycleName, pickupSiteName, pickup
       subject: 'Subscription Confirmation',
       text: `Hello ${name},\n\nThank you for subscribing to the ${eggCycleName} cycle! 
       Your payment of $${totalAmount} has been received.\n\nYou have selected the following pickup site:\n\n
-      Site: ${pickupSiteName}\nAddress: ${pickupSiteAddress}\nInstructions: ${pickupSiteInstructions}\nPickup Start Day: ${pickupStartDay}\nPickup Deadline Day: ${pickupDeadlineDay}\n\nView more information on your order through your user profile!\n\nBest regards,\nThe Farm Team`
+      Site: ${pickupSiteName}\nAddress: ${pickupSiteAddress}\nInstructions: ${pickupSiteInstructions}\nPickup Start Day: ${pickupStartDay}\nPickup Deadline Day: ${pickupDeadlineDay}\n\nView more information on your order through your user profile!\n\nNOTE: Mike is just one guy, and he's affected by weather, traffic, and all the other dropoffs he does on his days in town (restaurants, grocery stores and NE CSA sites) so occasionally he gets behind schedule. If YOU have a super tight schedule, and/or live far away from your pickup site, I recommend giving a little bit of a cushion after the target delivery times.\n\nBest regards,\nThe Farm Team`
     };
   
     transporter.sendMail(mailOptions, (err, info) => {
