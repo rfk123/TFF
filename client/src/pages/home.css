@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Roboto:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap');
+
 .home-container {
   display: flex;
   justify-content: center;
@@ -19,14 +22,18 @@
 }
 
 .home-content h1 {
+  font-family: "Indie Flower", system-ui;
   font-size: 2.2rem;
   margin-bottom: 1.5rem;
   color: #2f4f4f;  /* Dark green/gray for a natural, professional look */
+  font-weight: 1500;
 }
 
 .home-content p {
-  font-size: 1.2rem;
+  font-family: 'Lora', serif;
+  font-size: 1.1rem;
   margin-bottom: 2.5rem;
+  font-weight: 300;
   color: #555;  /* Slightly darker gray for text */
 }
 
