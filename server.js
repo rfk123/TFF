@@ -210,9 +210,13 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (request, respon
       const session = event.data.object;
       console.log('Session metadata:', session.metadata);
       
+      // const insertQuery = `
+      //   INSERT INTO subscriptions (user_id, name, cartons_per_week, egg_cycle, pickup_site, total_amount, cycle_id)
+      //   VALUES ($1, $2, $3, $4, $5, $6, $7)
+      // `;
       const insertQuery = `
-        INSERT INTO subscriptions (user_id, name, cartons_per_week, egg_cycle, pickup_site, total_amount, cycle_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO subscriptions (user_id, name, cartons_per_week, egg_cycle, pickup_site, total_amount, cycle_id, donation_cartons)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       `;
     
       // Query to get the egg cycle name and full pickup site details
@@ -244,7 +248,8 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (request, respon
           session.metadata.eggCycle,
           parseInt(session.metadata.pickupSite, 10),
           session.amount_total / 100,
-          parseInt(session.metadata.cycle_id, 10)
+          parseInt(session.metadata.cycle_id, 10),
+          parseInt(session.metadata.donationCartons, 10) || 0
         ], (err, result) => {
           if (err) {
             console.error('Error inserting subscription data:', err);
@@ -274,9 +279,16 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (request, respon
 
 // Fetch subscriptions for admin
 app.get('/api/admin/subscriptions', (req, res) => {
+    // const query = `
+    //   SELECT s.user_id, s.name, s.cartons_per_week, c.cycle_name AS egg_cycle,
+    //          st.site_name AS pickup_site, s.total_amount, s.cycle_id 
+    //   FROM subscriptions s
+    //   JOIN cycles c ON s.cycle_id = c.cycle_id
+    //   JOIN sites st ON s.pickup_site = st.site_id
+    // `;
     const query = `
-      SELECT s.user_id, s.name, s.cartons_per_week, c.cycle_name AS egg_cycle,
-             st.site_name AS pickup_site, s.total_amount, s.cycle_id 
+      SELECT s.user_id, s.name, s.cartons_per_week, s.donation_cartons, c.cycle_name AS egg_cycle,
+            st.site_name AS pickup_site, s.total_amount, s.cycle_id
       FROM subscriptions s
       JOIN cycles c ON s.cycle_id = c.cycle_id
       JOIN sites st ON s.pickup_site = st.site_id

@@ -378,65 +378,66 @@ const Admin = () => {
                                 <strong>{cycle} Total:</strong> ${Number(totalsByCycle[cycle].totalAmount || 0).toFixed(2)}
                             </p>
                             <div className="cycle-summary">
-                            <h2>For Pickup Sheet and totals:</h2>
-                            <label>Select Cycle:</label>
-                            <select onChange={(e) => setSelectedCycle(e.target.value)}>
-                                <option value="">Select a cycle</option>
-                                {Object.keys(totalsByCycle).map((cycle) => (
-                                    <option key={cycle} value={cycle}>{cycle}</option>
-                                ))}
-                            </select>
+                                <h2>For Pickup Sheet and totals:</h2>
+                                <label>Select Cycle:</label>
+                                <select onChange={(e) => setSelectedCycle(e.target.value)}>
+                                    <option value="">Select a cycle</option>
+                                    {Object.keys(totalsByCycle).map((cycle) => (
+                                        <option key={cycle} value={cycle}>{cycle}</option>
+                                    ))}
+                                </select>
 
-                            {selectedCycle && (
-                                <>
-                                    <label>Select Location:</label>
-                                    <select onChange={(e) => setSelectedLocation(e.target.value)}>
-                                        <option value="">Select a location</option>
-                                        {locations.map((site) => (
-                                            <option key={site.site_id} value={site.site_id}>
-                                                {site.site_name} - {site.site_address}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </>
-                            )}
+                                {selectedCycle && (
+                                    <>
+                                        <label>Select Location:</label>
+                                        <select onChange={(e) => setSelectedLocation(e.target.value)}>
+                                            <option value="">Select a location</option>
+                                            {locations.map((site) => (
+                                                <option key={site.site_id} value={site.site_id}>
+                                                    {site.site_name} - {site.site_address}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </>
+                                )}
 
-                            {selectedCycle && selectedLocation && (
-                                <>
-                                    <p><strong>Total Cartons Needed (press the download button to view):</strong> {totalCartons}</p> {/* Show total cartons */}
-                                    <button
-                                        onClick={() => downloadOrdersByLocation(selectedCycle, selectedLocation)}
-                                        disabled={!selectedCycle || !selectedLocation}
-                                    >
-                                        Download Printable File
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                            <br></br>
-
+                                {selectedCycle && selectedLocation && (
+                                    <>
+                                        <p><strong>Total Cartons Needed (press the download button to view):</strong> {totalCartons}</p> {/* Show total cartons */}
+                                        <button
+                                            onClick={() => downloadOrdersByLocation(selectedCycle, selectedLocation)}
+                                            disabled={!selectedCycle || !selectedLocation}
+                                        >
+                                            Download Printable File
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                            <br />
                         </div>
                     ))}
                 </div>
                 <table className="subscription-table">
                     <thead>
                         <tr>
-                        <th>Name</th> 
-                        <th>Cartons/Week</th>
-                        <th>Egg Cycle</th>
-                        <th>Pickup Site</th>
-                        <th>Total Amount</th>
+                            <th>Name</th>
+                            <th>Cartons/Week</th>
+                            <th>Egg Cycle</th>
+                            <th>Pickup Site</th>
+                            <th>Total Amount</th>
+                            <th>Donations</th> {/* Added the new column for donations */}
                         </tr>
                     </thead>
                     <tbody>
                         {subscriptions.map((sub, index) => (
-                        <tr key={index}>
-                            <td>{sub.name}</td>
-                            <td>{sub.cartons_per_week}</td>
-                            <td>{sub.egg_cycle}</td>
-                            <td>{sub.pickup_site}</td>
-                            <td>${parseFloat(sub.total_amount).toFixed(2)}</td>
-                        </tr>
+                            <tr key={index}>
+                                <td>{sub.name}</td>
+                                <td>{sub.cartons_per_week}</td>
+                                <td>{sub.egg_cycle}</td>
+                                <td>{sub.pickup_site}</td>
+                                <td>${parseFloat(sub.total_amount).toFixed(2)}</td>
+                                <td>{sub.donation_cartons || 0}</td> {/* Display donation cartons here */}
+                            </tr>
                         ))}
                     </tbody>
                 </table>
