@@ -43,37 +43,38 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Email function to send confirmation
-// const sendConfirmationEmail = (email, name, eggCycle, totalAmount) => {
-//   console.log('Sending email for cycle:', eggCycle);  // Log eggCycle for debugging
-  
-//   const mailOptions = {
-//     from: 'your_email@gmail.com',
-//     to: email,
-//     subject: 'Subscription Confirmation',
-//     text: `Hello ${name},\n\nThank you for subscribing to the ${eggCycle} cycle! Your payment of $${totalAmount} has been received.\n\nView more information on your order through your user profile!\n\nBest regards,\nThe Farm Team`
-//   };
-
-//   transporter.sendMail(mailOptions, (err, info) => {
-//     if (err) {
-//       console.error('Error sending email:', err);
-//     } else {
-//       console.log('Confirmation email sent:', info.response);
-//     }
-//   });
-// };
 
 const sendConfirmationEmail = (email, name, eggCycleName, pickupSiteName, pickupSiteAddress, pickupSiteInstructions, pickupStartDay, pickupDeadlineDay, totalAmount) => {
     console.log('Sending email for cycle:', eggCycleName);  // Log eggCycleName for debugging
     
     const mailOptions = {
-      from: 'your_email@gmail.com',
-      to: email,
-      subject: 'Subscription Confirmation',
-      text: `Hello ${name},\n\nThank you for subscribing to the ${eggCycleName} cycle! 
-      Your payment of $${totalAmount} has been received.\n\nYou have selected the following pickup site:\n\n
-      Site: ${pickupSiteName}\nAddress: ${pickupSiteAddress}\nInstructions: ${pickupSiteInstructions}\nPickup Start Day: ${pickupStartDay}\nPickup Deadline Day: ${pickupDeadlineDay}\n\nView more information on your order through your user profile!\n\nNOTE: Mike is just one guy, and he's affected by weather, traffic, and all the other dropoffs he does on his days in town (restaurants, grocery stores and NE CSA sites) so occasionally he gets behind schedule. If YOU have a super tight schedule, and/or live far away from your pickup site, I recommend giving a little bit of a cushion after the target delivery times.\n\nBest regards,\nThe Farm Team`
-    };
+        from: 'your_email@gmail.com',
+        to: email,
+        subject: 'Subscription Confirmation',
+        html: `Hello ${name},<br><br>
+        Thank you for subscribing to the <b>${eggCycleName}</b> cycle! 
+        Your payment of <b>$${totalAmount}</b> has been received.<br><br>
+      
+        You have selected the following pickup site:<br><br>
+      
+        <b>Site:</b> ${pickupSiteName}<br>
+        <b>Address:</b> ${pickupSiteAddress}<br>
+        <b>Instructions:</b> ${pickupSiteInstructions}<br>
+        <b>Pickup Start Day:</b> ${pickupStartDay}<br>
+        <b>Pickup Deadline Day:</b> ${pickupDeadlineDay}<br><br>
+      
+        View more information on your order through your user profile!<br><br>
+      
+        Since Thanksgiving is on a Thursday, the eggs will be delivered on Wednesday, November 27 that week (the day before Thanksgiving).<br><br>
+      
+        If you have questions, please reach out to Amy Stork at <a href="mailto:amystork@gmail.com">amystork@gmail.com</a>.<br><br>
+      
+        <b>NOTE:</b> Mike is just one guy, and he's affected by weather, traffic, and all the other dropoffs he does on his days in town (restaurants, grocery stores, and NE CSA sites), so occasionally he gets behind schedule. If YOU have a super tight schedule, and/or live far away from your pickup site, I recommend giving a little bit of a cushion after the target delivery times.<br><br>
+      
+        Best regards,<br>
+        The Farm Team`
+      };
+      
   
     transporter.sendMail(mailOptions, (err, info) => {
       if (err) {
@@ -139,63 +140,6 @@ app.use((req, res, next) => {
 });
 
 // Create checkout session route
-// app.post('/create-checkout-session', async (req, res) => {
-//   console.log('Received data from frontend:', req.body);
-
-//   const { userId, name, email, amount, cartonsPerWeek, pickupSite, donationCartons, eggCycle } = req.body;
-//   const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:4242';
-//   if (!userId || !name || !amount || !cartonsPerWeek || !pickupSite || !eggCycle || !email) {
-//     console.log('Missing required fields:', req.body);
-//     return res.status(400).send('Missing required fields');
-//   }
-
-//   getCurrentCycle((err, currentCycle) => {
-//     if (err || !currentCycle) {
-//       console.error('Error fetching current cycle:', err);
-//       return res.status(500).send('Error fetching current cycle');
-//     }
-
-//     console.log('Creating Stripe Checkout session...');
-//     stripe.checkout.sessions.create({
-//       payment_method_types: ['card'],
-//       customer_email: email, 
-//       line_items: [
-//         {
-//           price_data: {
-//             currency: 'usd',
-//             product_data: {
-//               name: 'Egg Subscription',
-//             },
-//             unit_amount: amount, // Ensure it's in cents
-//           },
-//           quantity: 1,
-//         },
-//       ],
-//       mode: 'payment',
-//       success_url: `${CLIENT_URL}/success`,
-//       cancel_url: `${CLIENT_URL}/cancel`,
-//       metadata: {
-//         userId,
-//         name,
-//         cartonsPerWeek,
-//         pickupSite,
-//         donationCartons,
-//         cycle_id: currentCycle.cycle_id,
-//         eggCycle: currentCycle.cycle_name
-//       }
-//     })        
-//     .then(session => {
-//       console.log('Stripe session created successfully:', session.id);
-//       res.json({ id: session.id });
-//     })
-//     .catch(error => {
-//       console.error('Error creating Stripe Checkout session:', error);
-//       res.status(500).send('Server error: Could not create session');
-//     });
-//   });
-// });
-
-// Create checkout session route
 app.post('/create-checkout-session', async (req, res) => {
     console.log('Received data from frontend:', req.body);
   
@@ -248,60 +192,6 @@ app.post('/create-checkout-session', async (req, res) => {
     }
   });
   
-
-// Stripe webhook requires raw body parsing
-// app.post('/webhook', express.raw({ type: 'application/json' }), (request, response) => {
-//   const sig = request.headers['stripe-signature'];
-//   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-//   let event;
-//   try {
-//     event = stripe.webhooks.constructEvent(request.body, sig, webhookSecret);
-//   } catch (err) {
-//     console.error('Webhook signature verification failed:', err.message);
-//     return response.status(400).send(`Webhook Error: ${err.message}`);
-//   }
-
-//   if (event.type === 'checkout.session.completed') {
-//     const session = event.data.object;
-//     console.log('Session metadata:', session.metadata);
-    
-//     const insertQuery = `
-//       INSERT INTO subscriptions (user_id, name, cartons_per_week, egg_cycle, pickup_site, total_amount, cycle_id)
-//       VALUES ($1, $2, $3, $4, $5, $6, $7)
-//     `;
-  
-//     // pool.query(insertQuery, [
-//     //   session.metadata.userId,
-//     //   session.metadata.name,
-//     //   session.metadata.cartonsPerWeek,
-//     //   session.metadata.eggCycle,
-//     //   session.metadata.pickupSite,
-//     //   session.amount_total / 100,
-//     //   session.metadata.cycle_id
-//     // ], (err, result) => {
-//     pool.query(insertQuery, [
-//     session.metadata.userId,
-//     session.metadata.name,
-//     parseInt(session.metadata.cartonsPerWeek, 10),
-//     session.metadata.eggCycle,
-//     parseInt(session.metadata.pickupSite, 10), // Ensure pickupSite is an integer
-//     session.amount_total / 100,
-//     parseInt(session.metadata.cycle_id, 10)
-//     ], (err, result) => {
-//       if (err) {
-//         console.error('Error inserting subscription data:', err);
-//         return response.status(500).send('Error inserting subscription data');
-//       }
-      
-//       // Send confirmation email
-//       sendConfirmationEmail(session.customer_email, session.metadata.name, session.metadata.eggCycle, session.amount_total / 100);
-//       response.status(200).send('Webhook received and email sent');
-//     });
-//   } else {
-//     response.status(200).send('Webhook received');
-//   }
-// });
 
 // Stripe webhook requires raw body parsing
 app.post('/webhook', express.raw({ type: 'application/json' }), (request, response) => {
