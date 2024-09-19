@@ -11,6 +11,7 @@ const Signup = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState(''); 
+    const [showPassword, setShowPassword] = useState(false);  // Track password visibility
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -29,7 +30,7 @@ const Signup = () => {
             setPassword('');  // Clear the password field
             return;
         }
-        
+
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
@@ -85,12 +86,20 @@ const Signup = () => {
                     <label htmlFor="password">Password</label>
                     <input
                         id="password"
-                        type="password"
+                        type={showPassword ? "text" : "password"}  // Toggle type based on state
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Password"
                         required
                     />
+                    {/* Toggle button to show or hide the password */}
+                    <button 
+                        type="button" 
+                        onClick={() => setShowPassword(!showPassword)} 
+                        className="show-password-btn"
+                    >
+                        {showPassword ? "Hide" : "Show"} Password
+                    </button>
                 </div>
 
                 <button type="submit">Sign up</button>
