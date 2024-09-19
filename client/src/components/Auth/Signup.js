@@ -16,32 +16,45 @@ const Signup = () => {
 
     const onSubmit = async (e) => {
         e.preventDefault();
-
+    
         if (!emailRegex.test(email)) {
             setError('Please enter a valid email address.');
             setPassword('');
             setEmail('');
             return;
         }
-
+    
         try {
-            // Create user in Firebase Authentication
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-
+    
             // Store user info in Firestore with default role 'user'
             await setDoc(doc(db, "users", user.uid), {
                 email: user.email,
-                role: "user"  // Default role is "user"
+                role: "user"
             });
-
+    
             console.log(user);
             navigate("/login", { state: { successMessage: "Account created successfully. Please login." } });
         } catch (error) {
             console.error(error.code, error.message);
-            setError('An error occurred during signup. Please try again.');
+    
+            switch (error.code) {
+                case 'auth/email-already-in-use':
+                    setError('This email is already in use.');
+                    break;
+                case 'auth/weak-password':
+                    setError('Password should be at least 6 characters.');
+                    break;
+                case 'auth/invalid-email':
+                    setError('Invalid email format.');
+                    break;
+                default:
+                    setError('An error occurred during signup. Please try again.');
+            }
         }
     };
+    
 
     return (
         <div className="signup-container">
