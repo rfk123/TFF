@@ -24,6 +24,12 @@ const Signup = () => {
             return;
         }
     
+        if (/\s/.test(password)) {
+            setError('Password cannot contain spaces.');
+            setPassword('');  // Clear the password field
+            return;
+        }
+        
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
