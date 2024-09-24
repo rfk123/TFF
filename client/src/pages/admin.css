@@ -143,6 +143,20 @@ button:disabled {
   opacity: 0.6; /* Make it visually obvious that the button is disabled */
 }
 
+textarea {
+  width: 100%;
+  padding: 10px;
+  margin: 5px 0 10px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-family: 'Arial', sans-serif;
+  font-size: 1rem;
+  color: #34495e;
+  background-color: #ecf0f1;
+}
+
 @media (max-width: 768px) {
   table th, table td {
       font-size: 0.9rem;

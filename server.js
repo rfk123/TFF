@@ -11,8 +11,14 @@ const fs = require('fs');
 const axios = require('axios');
 const path = require('path');
 
+const admin = require('firebase-admin');
+const serviceAccount = require('./trent-family-farms-firebase-adminsdk-rrulv-8c1b0fb70f.json');
 
-// HTTPS Redirection Middleware
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  // databaseURL: "https://<your-database-name>.firebaseio.com" // Replace with your Firebase database URL if needed
+});
+
 app.use((req, res, next) => {
     if (process.env.NODE_ENV === 'production' && req.headers['x-forwarded-proto'] !== 'https') {
       return res.redirect(`https://${req.headers.host}${req.url}`);
@@ -351,6 +357,49 @@ app.post('/api/admin/sites', async (req, res) => {
   }
 });
 
+app.get('/api/admin/download-all-orders', async (req, res) => {
+  try {
+    // Fetch subscriptions from PostgreSQL
+    const query = `
+      SELECT s.user_id, s.name, s.cartons_per_week, s.donation_cartons, c.cycle_name AS egg_cycle,
+             st.site_name AS pickup_site, s.total_amount, s.cycle_id
+      FROM subscriptions s
+      JOIN cycles c ON s.cycle_id = c.cycle_id
+      JOIN sites st ON s.pickup_site = st.site_id
+    `;
+    const result = await pool.query(query);
+    const subscriptions = result.rows;
+
+    // Fetch user emails from Firebase
+    const userPromises = subscriptions.map(async (sub) => {
+      const userRecord = await admin.auth().getUser(sub.user_id);
+      return {
+        ...sub,
+        email: userRecord.email
+      };
+    });
+    const subscriptionsWithEmails = await Promise.all(userPromises);
+
+    // Create Excel file
+    const workbook = xlsx.utils.book_new();
+    const worksheet = xlsx.utils.json_to_sheet(subscriptionsWithEmails);
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'All Orders');
+
+    // Write workbook to buffer
+    const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    // Send buffer in the response
+    res.json({
+      success: true,
+      filename: `all-orders.xlsx`,
+      data: buffer.toString('base64') // Convert buffer to base64 to send as JSON
+    });
+  } catch (error) {
+    console.error('Error fetching subscription orders:', error);
+    res.status(500).json({ error: 'Error fetching subscription orders' });
+  }
+});
+
 // Fetch all sites
 app.get('/api/admin/sites', (req, res) => {
   const query = `
@@ -366,6 +415,50 @@ app.get('/api/admin/sites', (req, res) => {
     }
     res.json(result.rows);
   });
+});
+
+app.post('/api/admin/send-mass-email', async (req, res) => {
+  const { message } = req.body;
+
+  if (!message) {
+      return res.status(400).json({ error: 'Message content is required' });
+  }
+
+  try {
+      // Fetch users from Firebase
+      const listUsers = async (nextPageToken) => {
+          const users = [];
+          const result = await admin.auth().listUsers(1000, nextPageToken);
+          users.push(...result.users);
+
+          if (result.pageToken) {
+              users.push(...await listUsers(result.pageToken));
+          }
+
+          return users;
+      };
+
+      const users = await listUsers();
+      const emails = users.map(user => user.email);
+
+      // Send email to each subscriber
+      const sendPromises = emails.map((email) => {
+          const mailOptions = {
+              from: process.env.EMAIL_USER,
+              to: email,
+              subject: 'Important Update from Trent Family Farms',
+              html: `<p>Dear Customer,</p><p>${message}</p><p>Best regards,<br>The Farm Team</p>`
+          };
+          return transporter.sendMail(mailOptions);
+      });
+
+      await Promise.all(sendPromises);
+
+      res.status(200).json({ success: 'Emails sent successfully' });
+  } catch (error) {
+      console.error('Error sending mass email:', error);
+      res.status(500).json({ error: 'Failed to send emails' });
+  }
 });
 
 // Find the closest site based on user location

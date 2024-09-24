@@ -26,7 +26,40 @@ const Admin = () => {
     const [selectedLocation, setSelectedLocation] = useState('');
     const [locations, setLocations] = useState([]); 
     const [totalCartons, setTotalCartons] = useState(0);
+    const [emailMessage, setEmailMessage] = useState('');
+    const [sendingEmail, setSendingEmail] = useState(false);
 
+    const handleSendMassEmail = async () => {
+        if (!emailMessage.trim()) {
+            alert('Please enter a message.');
+            return;
+        }
+    
+        setSendingEmail(true);
+    
+        try {
+            // Make a request to your server to send the mass email
+            const response = await fetch('/api/admin/send-mass-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: emailMessage }),
+            });
+    
+            if (response.ok) {
+                alert('Mass email sent successfully!');
+                setEmailMessage('');  // Clear the message after successful send
+            } else {
+                alert('Failed to send mass email.');
+            }
+        } catch (error) {
+            console.error('Error sending mass email:', error);
+            alert('An error occurred while sending the email.');
+        } finally {
+            setSendingEmail(false);
+        }
+    };    
 
     const handleCycleChange = (e) => {
         const cycle = e.target.value;
@@ -115,6 +148,28 @@ const Admin = () => {
         }
     };
 
+    const downloadAllOrders = async () => {
+        try {
+            const response = await fetch('/api/admin/download-all-orders');
+            const data = await response.json();
+    
+            if (!response.ok) {
+                throw new Error(`Failed to download orders: ${response.statusText}`);
+            }
+    
+            const blob = new Blob([new Uint8Array(atob(data.data).split("").map(c => c.charCodeAt(0)))], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', data.filename);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+        } catch (error) {
+            console.error('Error downloading all orders:', error);
+        }
+    };
+    
     const fetchTotalCartons = async (cycleId, siteId) => {
         try {
             const encodedCycleId = encodeURIComponent(cycleId);
@@ -368,6 +423,31 @@ const Admin = () => {
                 </form>
             </section>
             <hr></hr>
+            <section>
+                <h2>Send Mass Email</h2>
+                <form onSubmit={(e) => { e.preventDefault(); handleSendMassEmail(); }}>
+                    <label>
+                        Message:
+                        <textarea
+                            value={emailMessage}
+                            onChange={(e) => setEmailMessage(e.target.value)}
+                            rows="5"
+                            placeholder="Enter your message here..."
+                            required
+                            style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }}
+                        />
+                    </label>
+                    <button type="submit" disabled={sendingEmail}>
+                        {sendingEmail ? 'Sending...' : 'Send Email'}
+                    </button>
+                </form>
+            </section>
+            <hr></hr>
+            <section>
+                <h2>Download All Subscription Orders</h2>
+                <button onClick={downloadAllOrders}>Download All Orders</button>
+            </section>
+            <hr></hr>
             {/* Subscriptions Section */}
             <section>
                 <h2>Subscriptions</h2>
@@ -377,6 +457,7 @@ const Admin = () => {
                             <p>
                                 <strong>{cycle} Total:</strong> ${Number(totalsByCycle[cycle].totalAmount || 0).toFixed(2)}
                             </p>
+                            <p><strong>Total Cartons Needed:</strong> {totalsByCycle[cycle].totalCartons}</p>
                             <div className="cycle-summary">
                                 <h2>For Pickup Sheet and totals:</h2>
                                 <label>Select Cycle:</label>
