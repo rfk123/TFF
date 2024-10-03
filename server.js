@@ -755,23 +755,53 @@ app.post('/api/admin/cycles', (req, res) => {
     );
   });
   
-app.delete('/api/admin/cycles/:id', (req, res) => {
-    const { id } = req.params;
+// app.delete('/api/admin/cycles/:id', (req, res) => {
+//     const { id } = req.params;
   
-    if (!id) {
-      return res.status(400).send('Cycle ID is required');
-    }
+//     if (!id) {
+//       return res.status(400).send('Cycle ID is required');
+//     }
   
-    const query = 'DELETE FROM cycles WHERE cycle_id = $1';
+//     const query = 'DELETE FROM cycles WHERE cycle_id = $1';
   
-    pool.query(query, [id], (err, result) => {
+//     pool.query(query, [id], (err, result) => {
+//       if (err) {
+//         console.error('Error deleting cycle:', err);
+//         return res.status(500).send('Error deleting cycle');
+//       }
+//       res.status(200).send('Cycle deleted successfully');
+//     });
+//  });  
+
+app.put('/api/admin/cycles/:id', (req, res) => {
+  const { id } = req.params;
+  const { cycle_name, start_date, end_date, number_of_weeks } = req.body;
+
+  // Input validation
+  if (!start_date || !end_date || !cycle_name || !number_of_weeks) {
+    return res.status(400).send('Cycle name, start date, end date, and number of weeks are required');
+  }
+
+  const cycle_year = new Date(start_date).getFullYear();
+
+  const query = `
+    UPDATE cycles 
+    SET cycle_name = $1, start_date = $2, end_date = $3, number_of_weeks = $4, cycle_year = $5
+    WHERE cycle_id = $6
+  `;
+
+  pool.query(
+    query,
+    [cycle_name, start_date, end_date, number_of_weeks, cycle_year, id],
+    (err, result) => {
       if (err) {
-        console.error('Error deleting cycle:', err);
-        return res.status(500).send('Error deleting cycle');
+        console.error('Error updating cycle:', err);
+        return res.status(500).send('Error updating cycle');
       }
-      res.status(200).send('Cycle deleted successfully');
-    });
- });  
+      res.status(200).send('Cycle updated successfully');
+    }
+  );
+});
 
 
 // Route to edit cycle start and end dates
