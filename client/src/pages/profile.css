@@ -33,10 +33,10 @@
 
 /* Centering and styling the h2 elements */
 .subscription-list h2 {
-    text-align: center; /* Ensure h2 is centered */
+    text-align: center; 
     font-size: 1.8rem;
-    color: #4caf50; /* Optional: Change color */
-    margin-bottom: 1rem; /* Space below the heading */
+    color: #4caf50; 
+    margin-bottom: 1rem; 
     font-weight: 600;
 }
 

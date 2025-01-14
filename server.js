@@ -16,7 +16,6 @@ const serviceAccount = require('./trent-family-farms-firebase-adminsdk-rrulv-8c1
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  // databaseURL: "https://<your-database-name>.firebaseio.com" // Replace with your Firebase database URL if needed
 });
 
 app.use((req, res, next) => {
@@ -36,11 +35,11 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT || 5432,
   ssl: {
-    rejectUnauthorized: false, // Adjust based on your SSL requirements
+    rejectUnauthorized: false, // ssl requirement adjustments
   },
 });
 
-// Nodemailer transporter setup (use App Password for Gmail)
+//nodemailer transporter setup (use App Password for Gmail)
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -51,7 +50,7 @@ const transporter = nodemailer.createTransport({
 
 
 const sendConfirmationEmail = (email, name, eggCycleName, pickupSiteName, pickupSiteAddress, pickupSiteInstructions, pickupStartDay, pickupDeadlineDay, totalAmount) => {
-    console.log('Sending email for cycle:', eggCycleName);  // Log eggCycleName for debugging
+    console.log('Sending email for cycle:', eggCycleName);  // for debugging
     
     const mailOptions = {
         from: 'your_email@gmail.com',
@@ -91,10 +90,9 @@ const sendConfirmationEmail = (email, name, eggCycleName, pickupSiteName, pickup
     });
   };  
 
-// Define the getCurrentCycle function before it is used
 const getCurrentCycle = (callback) => {
-  const today = new Date().toISOString().slice(0, 10); // Format today's date as YYYY-MM-DD
-  console.log('Formatted today\'s date:', today); // Log today's date for debugging
+  const today = new Date().toISOString().slice(0, 10); // format as YYYY-MM-DD
+  console.log('Formatted today\'s date:', today); // for debugging
 
   const query = `
     SELECT cycle_id, cycle_name, start_date, end_date 
@@ -110,11 +108,11 @@ const getCurrentCycle = (callback) => {
       console.error('Error fetching the current cycle:', err);
       callback(err, null);
     } else if (result.rows.length > 0) {
-      console.log('Current cycle found:', result.rows[0]); // Log the found cycle
-      callback(null, result.rows[0]);  // Return the current cycle
+      console.log('Current cycle found:', result.rows[0]); 
+      callback(null, result.rows[0]);  // return the current cycle
     } else {
       console.log('No current cycle found');
-      callback(null, null);  // No current cycle found
+      callback(null, null);  // or no current cycle found
     }
   });
 };
@@ -124,7 +122,7 @@ const geocodeAddress = async (address) => {
   const encodedAddress = encodeURIComponent(address);
   const response = await axios.get(`https://nominatim.openstreetmap.org/search?q=${encodedAddress}&format=json&limit=1`, {
     headers: {
-      'User-Agent': 'YourAppName/1.0 (your_email@example.com)'  // Replace with your app name and email
+      'User-Agent': 'TrentFamilyFarmsLLC/1.0 (trentfamilyfarmsllc@yahoo.com)'  
     }
   });
   const data = response.data;
@@ -145,20 +143,20 @@ app.use((req, res, next) => {
   }
 });
 
-// Create checkout session route
+// checkout session route
 app.post('/create-checkout-session', async (req, res) => {
     console.log('Received data from frontend:', req.body);
   
     const { userId, name, email, amount, cartonsPerWeek, pickupSite, donationCartons, eggCycle } = req.body;
     const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:4242';
   
-    // Validate that all required fields are present
+    // ensure that required fields are present
     if (!userId || !name || !amount || !cartonsPerWeek || !pickupSite || !eggCycle || !email) {
       console.log('Missing required fields:', req.body);
       return res.status(400).send('Missing required fields');
     }
   
-    // Creating Stripe Checkout session using the data from the frontend
+    // creating Stripe Checkout session from FE data
     try {
       console.log('Creating Stripe Checkout session...');
       const session = await stripe.checkout.sessions.create({
@@ -171,7 +169,7 @@ app.post('/create-checkout-session', async (req, res) => {
               product_data: {
                 name: 'Egg Subscription',
               },
-              unit_amount: amount, // Ensure it's in cents
+              unit_amount: amount, // ensure it's in cents
             },
             quantity: 1,
           },
@@ -185,13 +183,13 @@ app.post('/create-checkout-session', async (req, res) => {
           cartonsPerWeek,
           pickupSite,
           donationCartons,
-          cycle_id: eggCycle,  // cycle_id from the frontend
-          eggCycle            // eggCycle name from the frontend
+          cycle_id: eggCycle,  
+          eggCycle           
         }
       });
   
       console.log('Stripe session created successfully:', session.id);
-      res.json({ id: session.id });  // Send the session ID to the frontend
+      res.json({ id: session.id });  
     } catch (error) {
       console.error('Error creating Stripe Checkout session:', error);
       res.status(500).send('Server error: Could not create session');
@@ -199,7 +197,7 @@ app.post('/create-checkout-session', async (req, res) => {
   });
   
 
-// Stripe webhook requires raw body parsing
+// stripe webhook (requires raw body parsing)
 app.post('/webhook', express.raw({ type: 'application/json' }), (request, response) => {
     const sig = request.headers['stripe-signature'];
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -216,16 +214,12 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (request, respon
       const session = event.data.object;
       console.log('Session metadata:', session.metadata);
       
-      // const insertQuery = `
-      //   INSERT INTO subscriptions (user_id, name, cartons_per_week, egg_cycle, pickup_site, total_amount, cycle_id)
-      //   VALUES ($1, $2, $3, $4, $5, $6, $7)
-      // `;
       const insertQuery = `
         INSERT INTO subscriptions (user_id, name, cartons_per_week, egg_cycle, pickup_site, total_amount, cycle_id, donation_cartons)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       `;
     
-      // Query to get the egg cycle name and full pickup site details
+      // query to get the egg cycle name and full pickup site details
       const cycleQuery = `
         SELECT c.cycle_name, s.site_name, s.site_address, s.site_instructions, s.pickup_start_day, s.pickup_deadline_day 
         FROM cycles c 
@@ -246,7 +240,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (request, respon
         const pickupStartDay = result.rows[0].pickup_start_day;
         const pickupDeadlineDay = result.rows[0].pickup_deadline_day;
   
-        // Insert the subscription data
+        // insert subscription data
         pool.query(insertQuery, [
           session.metadata.userId,
           session.metadata.name,
@@ -262,17 +256,17 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (request, respon
             return response.status(500).send('Error inserting subscription data');
           }
   
-          // Send confirmation email with full site details
+          //confirmation email with full site details
           sendConfirmationEmail(
             session.customer_email,
             session.metadata.name,
-            eggCycleName,                    // Pass the actual cycle name
-            pickupSiteName,                  // Pass the site name
-            pickupSiteAddress,               // Pass the site address
-            pickupSiteInstructions,          // Pass the site instructions
-            pickupStartDay,                  // Pass the start day
-            pickupDeadlineDay,               // Pass the deadline day
-            session.amount_total / 100       // Total amount
+            eggCycleName,                    
+            pickupSiteName,                 
+            pickupSiteAddress,               
+            pickupSiteInstructions,          
+            pickupStartDay,                  
+            pickupDeadlineDay,               
+            session.amount_total / 100       
           );
           response.status(200).send('Webhook received and email sent');
         });
@@ -285,13 +279,6 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (request, respon
 
 // Fetch subscriptions for admin
 app.get('/api/admin/subscriptions', (req, res) => {
-    // const query = `
-    //   SELECT s.user_id, s.name, s.cartons_per_week, c.cycle_name AS egg_cycle,
-    //          st.site_name AS pickup_site, s.total_amount, s.cycle_id 
-    //   FROM subscriptions s
-    //   JOIN cycles c ON s.cycle_id = c.cycle_id
-    //   JOIN sites st ON s.pickup_site = st.site_id
-    // `;
     const query = `
       SELECT s.user_id, s.name, s.cartons_per_week, s.donation_cartons, c.cycle_name AS egg_cycle,
             st.site_name AS pickup_site, s.total_amount, s.cycle_id
@@ -314,12 +301,11 @@ app.get('/api/admin/subscriptions', (req, res) => {
 app.post('/submit-question', (req, res) => {
   const { name, email, subject, message } = req.body;
 
-  // Validate the form data
+  // validate form data
   if (!name || !email || !subject || !message) {
     return res.status(400).json({ error: 'All fields are required' });
   }
 
-  // Insert the contact form data into PostgreSQL
   const insertQuery = `
     INSERT INTO contact_form_submissions (name, email, subject, message)
     VALUES ($1, $2, $3, $4)
@@ -339,7 +325,7 @@ app.post('/api/admin/sites', async (req, res) => {
   const { site_name, site_address, site_instructions, pickup_start_day, pickup_deadline_day } = req.body;
 
   try {
-    const location = await geocodeAddress(site_address);  // Geocode the address to get lat/lon
+    const location = await geocodeAddress(site_address);  // geocode the address to get lat/lon
     const query = `
       INSERT INTO sites (site_name, site_address, site_instructions, pickup_start_day, pickup_deadline_day, lat, lon)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -359,7 +345,7 @@ app.post('/api/admin/sites', async (req, res) => {
 
 app.get('/api/admin/download-all-orders', async (req, res) => {
   try {
-    // Fetch subscriptions from PostgreSQL
+    // fetch subscriptions from PostgreSQL
     const query = `
       SELECT s.user_id, s.name, s.cartons_per_week, s.donation_cartons, c.cycle_name AS egg_cycle,
              st.site_name AS pickup_site, s.total_amount, s.cycle_id
@@ -370,7 +356,7 @@ app.get('/api/admin/download-all-orders', async (req, res) => {
     const result = await pool.query(query);
     const subscriptions = result.rows;
 
-    // Fetch user emails from Firebase
+    // fetch user emails from Firebase
     const userPromises = subscriptions.map(async (sub) => {
       const userRecord = await admin.auth().getUser(sub.user_id);
       return {
@@ -380,19 +366,19 @@ app.get('/api/admin/download-all-orders', async (req, res) => {
     });
     const subscriptionsWithEmails = await Promise.all(userPromises);
 
-    // Create Excel file
+    // create Excel file
     const workbook = xlsx.utils.book_new();
     const worksheet = xlsx.utils.json_to_sheet(subscriptionsWithEmails);
     xlsx.utils.book_append_sheet(workbook, worksheet, 'All Orders');
 
-    // Write workbook to buffer
+    // write workbook to buffer
     const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
-    // Send buffer in the response
+    // Ssnd buffer in the response
     res.json({
       success: true,
       filename: `all-orders.xlsx`,
-      data: buffer.toString('base64') // Convert buffer to base64 to send as JSON
+      data: buffer.toString('base64') // have to convert buffer to base64 to send as JSON
     });
   } catch (error) {
     console.error('Error fetching subscription orders:', error);
@@ -425,7 +411,7 @@ app.post('/api/admin/send-mass-email', async (req, res) => {
   }
 
   try {
-      // Fetch users from Firebase
+      // fetch users from Firebase
       const listUsers = async (nextPageToken) => {
           const users = [];
           const result = await admin.auth().listUsers(1000, nextPageToken);
@@ -441,7 +427,7 @@ app.post('/api/admin/send-mass-email', async (req, res) => {
       const users = await listUsers();
       const emails = users.map(user => user.email);
 
-      // Send email to each subscriber
+      // send email to each subscriber
       const sendPromises = emails.map((email) => {
           const mailOptions = {
               from: process.env.EMAIL_USER,
@@ -489,7 +475,7 @@ app.post('/api/closest-site', (req, res) => {
       return res.status(500).send('Error fetching closest site');
     }
 
-    console.log('Results:', result.rows); // Log query results to inspect
+    console.log('Results:', result.rows); // for debug
     if (result.rows.length === 0) {
       return res.status(404).send('No sites found');
     }
@@ -583,7 +569,7 @@ app.get('/api/admin/questions', (req, res) => {
       console.error('Error fetching questions:', err);
       return res.status(500).json({ error: 'Error fetching questions' });
     }
-    res.json(result.rows); // Send only unresolved questions as JSON
+    res.json(result.rows); //  only unresolved questions are sent as JSON
   });
 });
 
@@ -607,13 +593,13 @@ app.get('/api/cycles', (req, res) => {
             console.error('Error fetching cycles:', err);
             return res.status(500).send('Error fetching cycles');
         }
-        res.json(result.rows); // Return the cycles
+        res.json(result.rows); 
     });
 });
 
 // Download orders for a specific cycle and site
 app.get('/api/admin/download-orders/:cycleId/:siteId', (req, res) => {
-    // Decode and parse the route parameters
+    // need to decode and parse the route parameters
     const cycleId = decodeURIComponent(req.params.cycleId);
     const siteId = parseInt(decodeURIComponent(req.params.siteId), 10);
   
@@ -637,10 +623,10 @@ app.get('/api/admin/download-orders/:cycleId/:siteId', (req, res) => {
         return res.status(404).json({ error: 'No subscriptions found for this cycle and location' });
       }
   
-      // Calculate total number of cartons
+      // calculate total number of cartons
       const totalCartons = result.rows.reduce((sum, sub) => sum + sub.cartons_per_week, 0);
   
-      // Prepare the workbook and sheet
+      // prep the workbook and sheet
       const workbook = xlsx.utils.book_new();
   
       const cycleName = result.rows[0].cycle_name.replace(/[^\w\s]/gi, '_');
@@ -651,29 +637,29 @@ app.get('/api/admin/download-orders/:cycleId/:siteId', (req, res) => {
   
       const worksheet = xlsx.utils.aoa_to_sheet([
         [sheetTitle],
-        ['Name', '# of Cartons', ...Array(11).fill('.')]  // Header row
+        ['Name', '# of Cartons', ...Array(11).fill('.')]  
       ]);
   
       result.rows.forEach(sub => {
         const row = [
           sub.name,
           sub.cartons_per_week,
-          ...Array(11).fill('')  // Empty cells for weekly check-offs
+          ...Array(11).fill('')  
         ];
         xlsx.utils.sheet_add_aoa(worksheet, [row], { origin: -1 });
       });
   
       xlsx.utils.book_append_sheet(workbook, worksheet, cycleName);
   
-      // Write workbook to buffer
+      // write the workbook to buffer
       const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
   
-      // Send buffer, totalCartons, and results in the response
+      // send buffer, totalCartons, and results in the response
       res.json({
         success: true,
         totalCartons,
         filename: `orders-${cycleName}-${siteName}.xlsx`,
-        data: buffer.toString('base64') // Convert buffer to base64 to send as JSON
+        data: buffer.toString('base64') // need to convert buffer to base64 to send as JSON
       });
     });
   });  
@@ -681,7 +667,6 @@ app.get('/api/admin/download-orders/:cycleId/:siteId', (req, res) => {
 
 // Fetch total cartons for a specific cycle and site
 app.get('/api/admin/total-cartons/:cycleId/:siteId', (req, res) => {
-    // Decode and parse the route parameters
     const cycleId = decodeURIComponent(req.params.cycleId);
     const siteId = parseInt(decodeURIComponent(req.params.siteId), 10);
   
@@ -699,7 +684,7 @@ app.get('/api/admin/total-cartons/:cycleId/:siteId', (req, res) => {
         return res.status(500).json({ error: 'Error fetching total cartons' });
       }
   
-      const totalCartons = result.rows[0]?.totalcartons || 0; // Default to 0 if no results
+      const totalCartons = result.rows[0]?.totalcartons || 0; // default to 0 if no results
       res.json({ totalCartons });
     });
   });
@@ -729,12 +714,10 @@ app.put('/api/admin/carton-price', (req, res) => {
 app.post('/api/admin/cycles', (req, res) => {
     const { cycle_name, start_date, end_date, number_of_weeks } = req.body;
   
-    // Input validation
     if (!cycle_name || !start_date || !end_date || !number_of_weeks) {
       return res.status(400).send('All fields are required');
     }
-  
-    // Extract the year from start_date
+
     const cycle_year = new Date(start_date).getFullYear();
   
     const query = `
@@ -754,30 +737,11 @@ app.post('/api/admin/cycles', (req, res) => {
       }
     );
   });
-  
-// app.delete('/api/admin/cycles/:id', (req, res) => {
-//     const { id } = req.params;
-  
-//     if (!id) {
-//       return res.status(400).send('Cycle ID is required');
-//     }
-  
-//     const query = 'DELETE FROM cycles WHERE cycle_id = $1';
-  
-//     pool.query(query, [id], (err, result) => {
-//       if (err) {
-//         console.error('Error deleting cycle:', err);
-//         return res.status(500).send('Error deleting cycle');
-//       }
-//       res.status(200).send('Cycle deleted successfully');
-//     });
-//  });  
 
 app.put('/api/admin/cycles/:id', (req, res) => {
   const { id } = req.params;
   const { cycle_name, start_date, end_date, number_of_weeks } = req.body;
 
-  // Input validation
   if (!start_date || !end_date || !cycle_name || !number_of_weeks) {
     return res.status(400).send('Cycle name, start date, end date, and number of weeks are required');
   }
@@ -804,17 +768,14 @@ app.put('/api/admin/cycles/:id', (req, res) => {
 });
 
 
-// Route to edit cycle start and end dates
 app.put('/api/admin/cycles/:id', (req, res) => {
     const { id } = req.params;
     const { start_date, end_date } = req.body;
   
-    // Input validation
     if (!start_date || !end_date) {
       return res.status(400).send('Start date and end date are required');
     }
-  
-    // Extract the year from start_date
+
     const cycle_year = new Date(start_date).getFullYear();
   
     const query = `
@@ -841,6 +802,5 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
 });
 
-// Start the server
 const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

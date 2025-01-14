@@ -19,7 +19,7 @@ function AppContent() {
   const [loading, setLoading] = useState(true); 
   const [user, setUser] = useState(null);
 
-  // Check Firebase auth state when the app loads
+  // check Firebase auth state when the app loads
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
       setUser(currentUser);

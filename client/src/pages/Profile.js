@@ -7,7 +7,7 @@ const Profile = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Fetch subscriptions on component mount
+    // fetch subscriptions on component mount
     useEffect(() => {
         const fetchSubscriptions = async () => {
             try {

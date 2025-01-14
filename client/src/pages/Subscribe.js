@@ -4,7 +4,7 @@ import { Elements, useStripe, useElements } from '@stripe/react-stripe-js';
 import './subscribe.css';
 import { auth } from './../firebase';
 
-// Load Stripe with the publishable key from your environment file
+// load Stripe with the publishable key from your environment file
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
 
 const SubscribeForm = () => {
@@ -18,25 +18,25 @@ const SubscribeForm = () => {
         notes: ''
     });
 
-    const [availableSites, setAvailableSites] = useState([]);  // Store the list of sites
+    const [availableSites, setAvailableSites] = useState([]);  
     const [availableCycles, setAvailableCycles] = useState([]);
     const [remainingWeeks, setRemainingWeeks] = useState(0); 
     const [orderTotal, setOrderTotal] = useState(0); 
     const [showDonationInfo, setShowDonationInfo] = useState(false); 
     const [showTotal, setShowTotal] = useState(false); 
-    const [cartonPrice, setCartonPrice] = useState(6.50);  // Default to $6.50 but will be updated dynamically
+    const [cartonPrice, setCartonPrice] = useState(6.50);  
 
     const stripe = useStripe();
     const elements = useElements();
 
-    // For the Closest Pickup Location logic
+    // for the Closest Pickup Location logic
     const [userAddress, setUserAddress] = useState('');
     const [nearestSite, setNearestSite] = useState('');
     
     useEffect(() => {
         fetchCurrentCycles();
-        fetchSites();  // Fetch the available sites from the backend
-        fetchCartonPrice();  // Fetch the latest carton price
+        fetchSites();  // fetch the available sites from the backend
+        fetchCartonPrice();  // fetch the latest carton price
     }, []);
 
     useEffect(() => {
@@ -54,25 +54,6 @@ const SubscribeForm = () => {
         }
     }, [formData.cartonsPerWeek, formData.wantsToDonate, formData.donationCartons, formData.eggCycle, formData.pickupSite, remainingWeeks]);
 
-    // const fetchCurrentCycles = async () => {
-    //     try {
-    //         const response = await fetch('/api/cycles');  
-    //         const cycles = await response.json();
-    //         const currentDate = new Date(); 
-    //         const filteredCycles = cycles.filter(cycle => {
-    //             const startDate = new Date(cycle.start_date);
-    //             const endDate = new Date(cycle.end_date);
-    //             const twoWeeksBeforeStart = new Date(startDate);
-    //             twoWeeksBeforeStart.setDate(startDate.getDate() - 14);
-    //             const twoWeeksBeforeEnd = new Date(endDate);
-    //             twoWeeksBeforeEnd.setDate(endDate.getDate() - 14);
-    //             return currentDate >= twoWeeksBeforeStart && currentDate <= twoWeeksBeforeEnd;
-    //         });
-    //         setAvailableCycles(filteredCycles);
-    //     } catch (error) {
-    //         console.error('Error fetching cycles:', error);
-    //     }
-    // };
     const fetchCurrentCycles = async () => {
         try {
             const response = await fetch('/api/cycles');  
@@ -208,7 +189,7 @@ const SubscribeForm = () => {
         }
     };
 
-    // Closest Pickup Location Logic
+    // closest Pickup Location Logic
     const geocodeAddress = async (address) => {
         const encodedAddress = encodeURIComponent(address);
         const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodedAddress}&format=json&limit=1`);

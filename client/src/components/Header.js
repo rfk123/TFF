@@ -18,7 +18,6 @@ const Header = () => {
       setDropdownOpen(false);
 
       if (user) {
-        // Check if the user is an admin
         const adminStatus = await checkIfAdmin(user.uid); 
         setIsAdmin(adminStatus); 
       } else {

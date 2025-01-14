@@ -14,14 +14,14 @@ const Contact = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Check if email is valid
+    // check if email is valid
     if (!emailRegex.test(email)) {
       setError('Please enter a valid email address.');
       return;
     }
 
     try {
-      // Save form data to the backend
+      // save form data to the backend
       const response = await fetch('/submit-question', {
         method: 'POST',
         headers: {

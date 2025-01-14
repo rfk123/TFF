@@ -7,7 +7,7 @@
   align-items: center;
   flex-direction: column;
   height: 100vh;
-  background-color: #f2f2f2;  /* Light gray background for cleanliness */
+  background-color: #f2f2f2;  
 }
 
 .home-content {
@@ -25,7 +25,7 @@
   font-family: "Indie Flower", system-ui;
   font-size: 2.2rem;
   margin-bottom: 1.5rem;
-  color: #2f4f4f;  /* Dark green/gray for a natural, professional look */
+  color: #2f4f4f; 
   font-weight: 1500;
 }
 
@@ -34,7 +34,7 @@
   font-size: 1.1rem;
   margin-bottom: 2.5rem;
   font-weight: 300;
-  color: #555;  /* Slightly darker gray for text */
+  color: #555;  
 }
 
 .home-buttons {
@@ -45,7 +45,7 @@
 
 .home-btn {
   padding: 0.9rem 2rem;
-  background-color: #4CAF50;  /* Green matching your brand */
+  background-color: #4CAF50; 
   color: #fff;
   border: none;
   border-radius: 5px;
@@ -59,7 +59,7 @@
 }
 
 .secondary-btn {
-  background-color: #6c757d;  /* Neutral gray for secondary button */
+  background-color: #6c757d;  
 }
 
 .secondary-btn:hover {
