@@ -7,6 +7,46 @@ import { auth } from './../firebase';
 // load Stripe with the publishable key from your environment file
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
 
+const NoCycleMessage = () => {
+  const handlePreorder = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      alert('Please sign in first.');
+      return;
+    }
+
+    const email = currentUser.email;
+
+    try {
+      const response = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });      
+      if (!response.ok) {
+        throw new Error('Preorder request failed.');
+      }
+      alert('Thank you! We will email you when the next cycle is available.');
+    } catch (error) {
+      console.error('Error adding to preorder list:', error);
+      alert('Sorry, there was an error. Please try again later.');
+    }
+  };
+
+  return (
+    <div className="no-cycle-message">
+      <h1>No Current Egg Cycle Available</h1>
+      <p>
+        We’re sorry, but there is no active cycle to subscribe to right now. 
+        Please click below to join our pre-order list, and we’ll notify you 
+        as soon as our next cycle is open for sign-ups!
+      </p>
+      <button onClick={handlePreorder}>Notify Me</button>
+    </div>
+  );
+};
+
+
 const SubscribeForm = () => {
     const [formData, setFormData] = useState({
         name: '',
@@ -25,6 +65,9 @@ const SubscribeForm = () => {
     const [showDonationInfo, setShowDonationInfo] = useState(false); 
     const [showTotal, setShowTotal] = useState(false); 
     const [cartonPrice, setCartonPrice] = useState(6.50);  
+
+    const [loadingCycles, setLoadingCycles] = useState(true);
+    const [noCurrentCycle, setNoCurrentCycle] = useState(false);
 
     const stripe = useStripe();
     const elements = useElements();
@@ -58,7 +101,6 @@ const SubscribeForm = () => {
         try {
             const response = await fetch('/api/cycles');  
             const cycles = await response.json();
-            console.log(cycles);
     
             const currentDate = new Date();
             const filteredCycles = cycles.filter(cycle => {
@@ -73,10 +115,16 @@ const SubscribeForm = () => {
     
                 return currentDate >= twoWeeksBeforeStart && currentDate <= twoWeeksBeforeEnd;
             });
-    
-            setAvailableCycles(filteredCycles);
+            if(filteredCycles.length === 0){
+              setNoCurrentCycle(true);
+            } else { 
+              setAvailableCycles(filteredCycles);
+              setNoCurrentCycle(false);
+            }
         } catch (error) {
             console.error('Error fetching cycles:', error);
+        } finally {
+          setLoadingCycles(false);
         }
     };
     
@@ -246,6 +294,14 @@ const SubscribeForm = () => {
 
     return (
         <div className="subscribe-container">
+          {loadingCycles ? (
+            <div className="loading-message">Loading subscription details...</div>
+          ) : noCurrentCycle ? (
+            <div className="no-cycle-message-container">
+              <NoCycleMessage />
+            </div>
+          ) : (
+            <>
           {/* Closest Pickup Location Form */}
           <div className="form-section closest-pickup-form">
             <h2>Find the Closest Pickup Location</h2>
@@ -399,6 +455,8 @@ const SubscribeForm = () => {
               </button>
             </form>
           </div>
+          </>
+          )}
         </div>
       );      
 };
