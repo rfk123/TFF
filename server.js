@@ -196,6 +196,90 @@ app.post('/create-checkout-session', async (req, res) => {
     }
   });
   
+// Add an email to the generic waitlist
+app.post('/api/waitlist', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  const insertQuery = `
+    INSERT INTO waitlist (email, created_at)
+    VALUES ($1, NOW())
+    ON CONFLICT (email) DO NOTHING
+  `;
+
+  try {
+    await pool.query(insertQuery, [email]);
+    return res.status(200).json({ message: 'You have been added to the waitlist.' });
+  } catch (error) {
+    console.error('Error adding email to waitlist:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+app.delete('/api/waitlist/:email', async (req, res) => {
+  const { email } = req.params;
+  
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    const deleteQuery = 'DELETE FROM waitlist WHERE email = $1';
+    const result = await pool.query(deleteQuery, [email]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'That email was not on the list.' });
+    }
+    return res.status(200).json({ message: 'Email removed from waitlist' });
+  } catch (error) {
+    console.error('Error removing email from waitlist:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/admin/notify-waitlist', async (req, res) => {
+  try {
+    //Fetch all waitlist entries not notified yet
+    const getWaitlistQuery = `
+      SELECT email
+      FROM waitlist
+      WHERE notified = false
+    `;
+    const waitlistResult = await pool.query(getWaitlistQuery);
+    const entries = waitlistResult.rows; 
+
+    //For each entry, send an email using nodemailer, etc.
+    for (const entry of entries) {
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: entry.email,
+        subject: 'Announcement from Trent Family Farms',
+        text: 'We now have a new cycle open for sign-ups! Visit our site to learn more.',
+      };
+      await transporter.sendMail(mailOptions);
+    }
+
+    //Mark all as notified
+    if (entries.length > 0) {
+      const updateQuery = `
+        UPDATE waitlist
+        SET notified = true
+        WHERE email = ANY ($1)
+      `;
+      const emailsToUpdate = entries.map(e => e.email);
+      await pool.query(updateQuery, [emailsToUpdate]);
+    }
+
+    return res.status(200).json({ message: 'All waitlist emails have been notified' });
+  } catch (error) {
+    console.error('Error notifying waitlist:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 // stripe webhook (requires raw body parsing)
 app.post('/webhook', express.raw({ type: 'application/json' }), (request, response) => {
@@ -295,6 +379,19 @@ app.get('/api/admin/subscriptions', (req, res) => {
       res.json(result.rows);
     });
   });
+
+  app.get('/api/waitlist/:email', async (req, res) => {
+    const { email } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM waitlist WHERE email = $1', [email]);
+        const onWaitlist = result.rows.length > 0;
+        res.json({ onWaitlist });
+    } catch (error) {
+        console.error('Error checking waitlist status:', error);
+        res.status(500).json({ error: 'Error checking waitlist status' });
+    }
+});
+
   
 
 // Contact form submission route
@@ -518,6 +615,22 @@ app.delete('/api/admin/sites/:id', (req, res) => {
     res.status(200).send('Site deleted successfully');
   });
 });
+
+app.delete('/api/waitlist/:email', async (req, res) => {
+  const { email } = req.params;
+  try {
+      const result = await pool.query('DELETE FROM waitlist WHERE email = $1 RETURNING *', [email]);
+      if (result.rowCount > 0) {
+          res.json({ success: true });
+      } else {
+          res.status(404).json({ error: 'Email not found on waitlist' });
+      }
+  } catch (error) {
+      console.error('Error removing from waitlist:', error);
+      res.status(500).json({ error: 'Error removing from waitlist' });
+  }
+});
+
 
 // Fetch all subscriptions for a specific user
 app.get('/get-subscriptions/:userId', (req, res) => {
