@@ -13,7 +13,7 @@ const SubscribeForm = () => {
         eggCycle: '',
         cartonsPerWeek: '',
         pickupSite: '',
-        wantsToDonate: 'no',
+        wantsToDonate: '',
         donationCartons: '',
         notes: ''
     });
@@ -120,12 +120,55 @@ const SubscribeForm = () => {
 
     const calculateOrderTotal = () => {
         const cartonsPerWeek = parseInt(formData.cartonsPerWeek, 10) || 0;
-        const donationCartons = formData.wantsToDonate === 'yes' ? (parseInt(formData.donationCartons, 10) || 0) : 0;
+        const donationCartons = donationCartonCalculations(formData.wantsToDonate);
         const totalCartonCost = remainingWeeks * cartonsPerWeek * cartonPrice; 
         const totalDonationCost = donationCartons * cartonPrice;
         const total = totalCartonCost + totalDonationCost;
         setOrderTotal(total.toFixed(2));
     };
+
+    //input form value and output number of cartons donated
+    //switch case for the different types of donations possible
+
+    const donationCartonCalculations = async (value) =>{
+
+      var cartons;
+
+      switch (value) {
+        case '1':
+          cartons = 1
+          break;
+        case '2':
+          cartons = 2
+          break;
+        case '3':
+          cartons = 3
+          break;
+        case '4':
+          cartons = 4
+          break;
+        case '5':
+          cartons = 5
+          break;
+        case 'half':
+          cartons = (remainingWeeks * parseInt(formData.cartonsPerWeek))/2
+          break;
+        case '3/4':
+          cartons = (3/4)*(remainingWeeks * parseInt(formData.cartonsPerWeek))
+          break;
+        case 'full':
+          cartons = remainingWeeks * parseInt(formData.cartonsPerWeek)
+          break;
+        case 'no':
+          cartons = 0
+          break;
+      
+        default:
+          break;
+      }
+      console.log(cartons)
+      return cartons
+    }
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -355,11 +398,19 @@ const SubscribeForm = () => {
                 onChange={handleChange}
                 required
               >
-                <option value="no">No</option>
-                <option value="yes">Yes</option>
+                <option value="1">Donate 1 dozen ${cartonPrice.toFixed(2)}</option>
+                <option value="2">Donate 2 dozen ${(cartonPrice*2).toFixed(2)}</option>
+                <option value="3">Donate 3 dozen ${(cartonPrice*2).toFixed(2)}</option>
+                <option value="4">Donate 4 dozen ${(cartonPrice*2).toFixed(2)}</option>
+                <option value="5">Donate 5 dozen ${(cartonPrice*2).toFixed(2)}</option>
+                <option value="half">Donate a half subscription for the season ({(remainingWeeks * cartonPrice).toFixed(2)} dozen)</option>
+                <option value="3/4">Donate 3/4 of a subscription for the season ({(remainingWeeks * cartonPrice).toFixed(2)} dozen)</option>
+                <option value="full">Donate a full subscription for the season ({(remainingWeeks * cartonPrice).toFixed(2)} dozen)</option>
+                <option value="no">No Donation</option>
+                
               </select>
       
-              {formData.wantsToDonate === 'yes' && (
+              {/*{formData.wantsToDonate !== 'no' && (
                 <>
                   <label htmlFor="donationCartons">
                     How Many Total Cartons Would You Like to Donate?{' '}
@@ -377,7 +428,7 @@ const SubscribeForm = () => {
                     required
                   />
                 </>
-              )}
+              )}*/}
 
               <label htmlFor="notes">Additional Notes (Optional):</label>
               <textarea
