@@ -61,6 +61,7 @@ const SubscribeForm = () => {
     const [availableSites, setAvailableSites] = useState([]);  
     const [availableCycles, setAvailableCycles] = useState([]);
     const [remainingWeeks, setRemainingWeeks] = useState(0); 
+    const [selectedTotalWeeks, setSelectedTotalWeeks] = useState(0);
     const [orderTotal, setOrderTotal] = useState(0); 
     const [showDonationInfo, setShowDonationInfo] = useState(false); 
     const [showTotal, setShowTotal] = useState(false); 
@@ -143,7 +144,8 @@ const SubscribeForm = () => {
         try {
             const response = await fetch('/api/admin/carton-price');  
             const data = await response.json();
-            setCartonPrice(data.carton_price);  
+            const numericPrice = parseFloat(data.carton_price);
+            setCartonPrice(numericPrice);  
         } catch (error) {
             console.error('Error fetching carton price:', error);
         }
@@ -156,6 +158,7 @@ const SubscribeForm = () => {
             return;
         }
 
+        setSelectedTotalWeeks(selectedCycle.number_of_weeks);
         const endDate = new Date(selectedCycle.end_date);
         const startOfCycle = new Date(selectedCycle.start_date);
         const totalWeeks = selectedCycle.number_of_weeks;
@@ -168,12 +171,55 @@ const SubscribeForm = () => {
 
     const calculateOrderTotal = () => {
         const cartonsPerWeek = parseInt(formData.cartonsPerWeek, 10) || 0;
-        const donationCartons = formData.wantsToDonate === 'yes' ? (parseInt(formData.donationCartons, 10) || 0) : 0;
+        const donationCartons = donationCartonCalculations(formData.wantsToDonate);
         const totalCartonCost = remainingWeeks * cartonsPerWeek * cartonPrice; 
         const totalDonationCost = donationCartons * cartonPrice;
         const total = totalCartonCost + totalDonationCost;
         setOrderTotal(total.toFixed(2));
     };
+
+    //input form value and output number of cartons donated
+    //switch case for the different types of donations possible
+
+    const donationCartonCalculations = (value) =>{
+
+      var cartons;
+
+      switch (value) {
+        case '1':
+          cartons = 1
+          break;
+        case '2':
+          cartons = 2
+          break;
+        case '3':
+          cartons = 3
+          break;
+        case '4':
+          cartons = 4
+          break;
+        case '5':
+          cartons = 5
+          break;
+        case 'half':
+          cartons = Math.round((selectedTotalWeeks * parseInt(formData.cartonsPerWeek))/2)
+          break;
+        case '3/4':
+          cartons = Math.round((3/4)*(selectedTotalWeeks * parseInt(formData.cartonsPerWeek)))
+          break;
+        case 'full':
+          cartons = selectedTotalWeeks * parseInt(formData.cartonsPerWeek)
+          break;
+        case 'no':
+          cartons = 0
+          break;
+      
+        default:
+          break;
+      }
+      console.log(cartons)
+      return cartons
+    }
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -207,7 +253,7 @@ const SubscribeForm = () => {
             cartonsPerWeek: formData.cartonsPerWeek,
             eggCycle: formData.eggCycle,  
             pickupSite: formData.pickupSite,
-            donationCartons: formData.wantsToDonate === 'yes' ? formData.donationCartons : 0,
+            donationCartons: formData.wantsToDonate != 'no' ? donationCartonCalculations(formData.wantsToDonate) : 0,
         };
 
         try {
@@ -411,11 +457,29 @@ const SubscribeForm = () => {
                 onChange={handleChange}
                 required
               >
-                <option value="no">No</option>
-                <option value="yes">Yes</option>
+                <option value="no">No Donation</option>
+                <option value="full">Donate a full subscription for the season ({selectedTotalWeeks} dozen) ${(selectedTotalWeeks * cartonPrice).toFixed(2)}</option>
+                <option value="3/4">Donate 3/4 of a subscription for the season ({Math.round(selectedTotalWeeks * .75)} dozen) ${(Math.round(selectedTotalWeeks * .75) * cartonPrice).toFixed(2)}</option>
+                <option value="half">Donate a half subscription for the season ({Math.round(selectedTotalWeeks * .50)} dozen) ${(Math.round(selectedTotalWeeks * .50) * cartonPrice).toFixed(2)}</option>
+                <option value="5">Donate 5 dozen ${(cartonPrice*5).toFixed(2)}</option>
+                <option value="4">Donate 4 dozen ${(cartonPrice*4).toFixed(2)}</option>
+                <option value="3">Donate 3 dozen ${(cartonPrice*3).toFixed(2)}</option>
+                <option value="2">Donate 2 dozen ${(cartonPrice*2).toFixed(2)}</option>
+                <option value="1">Donate 1 dozen ${cartonPrice.toFixed(2)}</option>
+
+                {/* <option value="1">Donate 1 dozen ${cartonPrice.toFixed(2)}</option>
+                <option value="2">Donate 2 dozen ${(cartonPrice*2).toFixed(2)}</option>
+                <option value="3">Donate 3 dozen ${(cartonPrice*3).toFixed(2)}</option>
+                <option value="4">Donate 4 dozen ${(cartonPrice*4).toFixed(2)}</option>
+                <option value="5">Donate 5 dozen ${(cartonPrice*5).toFixed(2)}</option>
+                <option value="half">Donate a half subscription for the season ({(remainingWeeks * cartonPrice).toFixed(2)} dozen)</option>
+                <option value="3/4">Donate 3/4 of a subscription for the season ({(remainingWeeks * cartonPrice).toFixed(2)} dozen)</option>
+                <option value="full">Donate a full subscription for the season ({(remainingWeeks * cartonPrice).toFixed(2)} dozen)</option> */}
+  
+                
               </select>
       
-              {formData.wantsToDonate === 'yes' && (
+              {/*{formData.wantsToDonate !== 'no' && (
                 <>
                   <label htmlFor="donationCartons">
                     How Many Total Cartons Would You Like to Donate?{' '}
@@ -433,7 +497,7 @@ const SubscribeForm = () => {
                     required
                   />
                 </>
-              )}
+              )}*/}
 
               <label htmlFor="notes">Additional Notes (Optional):</label>
               <textarea
