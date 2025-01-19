@@ -13,7 +13,7 @@ const SubscribeForm = () => {
         eggCycle: '',
         cartonsPerWeek: '',
         pickupSite: '',
-        wantsToDonate: '',
+        wantsToDonate: 'no',
         donationCartons: '',
         notes: ''
     });
@@ -21,6 +21,7 @@ const SubscribeForm = () => {
     const [availableSites, setAvailableSites] = useState([]);  
     const [availableCycles, setAvailableCycles] = useState([]);
     const [remainingWeeks, setRemainingWeeks] = useState(0); 
+    const [selectedTotalWeeks, setSelectedTotalWeeks] = useState(0);
     const [orderTotal, setOrderTotal] = useState(0); 
     const [showDonationInfo, setShowDonationInfo] = useState(false); 
     const [showTotal, setShowTotal] = useState(false); 
@@ -95,7 +96,8 @@ const SubscribeForm = () => {
         try {
             const response = await fetch('/api/admin/carton-price');  
             const data = await response.json();
-            setCartonPrice(data.carton_price);  
+            const numericPrice = parseFloat(data.carton_price);
+            setCartonPrice(numericPrice);  
         } catch (error) {
             console.error('Error fetching carton price:', error);
         }
@@ -108,6 +110,7 @@ const SubscribeForm = () => {
             return;
         }
 
+        setSelectedTotalWeeks(selectedCycle.number_of_weeks);
         const endDate = new Date(selectedCycle.end_date);
         const startOfCycle = new Date(selectedCycle.start_date);
         const totalWeeks = selectedCycle.number_of_weeks;
@@ -130,7 +133,7 @@ const SubscribeForm = () => {
     //input form value and output number of cartons donated
     //switch case for the different types of donations possible
 
-    const donationCartonCalculations = async (value) =>{
+    const donationCartonCalculations = (value) =>{
 
       var cartons;
 
@@ -151,13 +154,13 @@ const SubscribeForm = () => {
           cartons = 5
           break;
         case 'half':
-          cartons = (remainingWeeks * parseInt(formData.cartonsPerWeek))/2
+          cartons = Math.round((selectedTotalWeeks * parseInt(formData.cartonsPerWeek))/2)
           break;
         case '3/4':
-          cartons = (3/4)*(remainingWeeks * parseInt(formData.cartonsPerWeek))
+          cartons = Math.round((3/4)*(selectedTotalWeeks * parseInt(formData.cartonsPerWeek)))
           break;
         case 'full':
-          cartons = remainingWeeks * parseInt(formData.cartonsPerWeek)
+          cartons = selectedTotalWeeks * parseInt(formData.cartonsPerWeek)
           break;
         case 'no':
           cartons = 0
@@ -202,7 +205,7 @@ const SubscribeForm = () => {
             cartonsPerWeek: formData.cartonsPerWeek,
             eggCycle: formData.eggCycle,  
             pickupSite: formData.pickupSite,
-            donationCartons: formData.wantsToDonate === 'yes' ? formData.donationCartons : 0,
+            donationCartons: formData.wantsToDonate != 'no' ? donationCartonCalculations(formData.wantsToDonate) : 0,
         };
 
         try {
@@ -398,15 +401,25 @@ const SubscribeForm = () => {
                 onChange={handleChange}
                 required
               >
-                <option value="1">Donate 1 dozen ${cartonPrice.toFixed(2)}</option>
+                <option value="no">No Donation</option>
+                <option value="full">Donate a full subscription for the season ({selectedTotalWeeks} dozen) ${(selectedTotalWeeks * cartonPrice).toFixed(2)}</option>
+                <option value="3/4">Donate 3/4 of a subscription for the season ({Math.round(selectedTotalWeeks * .75)} dozen) ${(Math.round(selectedTotalWeeks * .75) * cartonPrice).toFixed(2)}</option>
+                <option value="half">Donate a half subscription for the season ({Math.round(selectedTotalWeeks * .50)} dozen) ${(Math.round(selectedTotalWeeks * .50) * cartonPrice).toFixed(2)}</option>
+                <option value="5">Donate 5 dozen ${(cartonPrice*5).toFixed(2)}</option>
+                <option value="4">Donate 4 dozen ${(cartonPrice*4).toFixed(2)}</option>
+                <option value="3">Donate 3 dozen ${(cartonPrice*3).toFixed(2)}</option>
                 <option value="2">Donate 2 dozen ${(cartonPrice*2).toFixed(2)}</option>
-                <option value="3">Donate 3 dozen ${(cartonPrice*2).toFixed(2)}</option>
-                <option value="4">Donate 4 dozen ${(cartonPrice*2).toFixed(2)}</option>
-                <option value="5">Donate 5 dozen ${(cartonPrice*2).toFixed(2)}</option>
+                <option value="1">Donate 1 dozen ${cartonPrice.toFixed(2)}</option>
+
+                {/* <option value="1">Donate 1 dozen ${cartonPrice.toFixed(2)}</option>
+                <option value="2">Donate 2 dozen ${(cartonPrice*2).toFixed(2)}</option>
+                <option value="3">Donate 3 dozen ${(cartonPrice*3).toFixed(2)}</option>
+                <option value="4">Donate 4 dozen ${(cartonPrice*4).toFixed(2)}</option>
+                <option value="5">Donate 5 dozen ${(cartonPrice*5).toFixed(2)}</option>
                 <option value="half">Donate a half subscription for the season ({(remainingWeeks * cartonPrice).toFixed(2)} dozen)</option>
                 <option value="3/4">Donate 3/4 of a subscription for the season ({(remainingWeeks * cartonPrice).toFixed(2)} dozen)</option>
-                <option value="full">Donate a full subscription for the season ({(remainingWeeks * cartonPrice).toFixed(2)} dozen)</option>
-                <option value="no">No Donation</option>
+                <option value="full">Donate a full subscription for the season ({(remainingWeeks * cartonPrice).toFixed(2)} dozen)</option> */}
+  
                 
               </select>
       

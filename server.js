@@ -504,6 +504,25 @@ app.put('/api/admin/sites/:id', (req, res) => {
   });
 });
 
+// Delete a cycle
+app.delete('/api/admin/cycles/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const query = 'DELETE FROM cycles WHERE cycle_id = $1';
+    const result = await pool.query(query, [id]);
+    if (result.rowCount > 0) {
+      res.status(200).send('Cycle deleted successfully');
+    } else {
+      res.status(404).send('No cycle found to delete');
+    }
+  } catch (error) {
+    console.error('Error deleting cycle:', error);
+    res.status(500).send('Error deleting cycle');
+  }
+});
+
+
 // Delete a site
 app.delete('/api/admin/sites/:id', (req, res) => {
   const { id } = req.params;
