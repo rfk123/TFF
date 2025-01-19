@@ -147,7 +147,7 @@ app.use((req, res, next) => {
 app.post('/create-checkout-session', async (req, res) => {
     console.log('Received data from frontend:', req.body);
   
-    const { userId, name, email, amount, cartonsPerWeek, pickupSite, donationCartons, eggCycle } = req.body;
+    const { userId, name, email, amount, cartonsPerWeek, pickupSite, donationCartons, eggCycle, secondEmail, additionalNotes } = req.body;
     const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:4242';
   
     // ensure that required fields are present
@@ -184,7 +184,8 @@ app.post('/create-checkout-session', async (req, res) => {
           pickupSite,
           donationCartons,
           cycle_id: eggCycle,  
-          eggCycle           
+          secondEmail: secondEmail || ' ', 
+          additionalNotes: additionalNotes || ' '         
         }
       });
   
@@ -299,8 +300,8 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (request, respon
       console.log('Session metadata:', session.metadata);
       
       const insertQuery = `
-        INSERT INTO subscriptions (user_id, name, cartons_per_week, egg_cycle, pickup_site, total_amount, cycle_id, donation_cartons)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO subscriptions (user_id, name, cartons_per_week, egg_cycle, pickup_site, total_amount, cycle_id, donation_cartons, second_email, additional_notes)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       `;
     
       // query to get the egg cycle name and full pickup site details
@@ -333,7 +334,9 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (request, respon
           parseInt(session.metadata.pickupSite, 10),
           session.amount_total / 100,
           parseInt(session.metadata.cycle_id, 10),
-          parseInt(session.metadata.donationCartons, 10) || 0
+          parseInt(session.metadata.donationCartons, 10) || 0,
+          session.metadata.secondEmail || ' ', 
+          session.metadata.additionalNotes || ' ' 
         ], (err, result) => {
           if (err) {
             console.error('Error inserting subscription data:', err);
