@@ -411,8 +411,8 @@ const SubscribeForm = () => {
                 <option value="">Select a cycle...</option>
                 {availableCycles.map((cycle) => (
                   <option key={cycle.cycle_id} value={cycle.cycle_id}>
-                    {cycle.cycle_name} ({new Date(cycle.start_date).toLocaleDateString()} -{' '}
-                    {new Date(cycle.end_date).toLocaleDateString()})
+                    {cycle.cycle_name} ({new Date(cycle.start_date).toLocaleDateString('en-US', { timeZone: 'UTC' })} -{' '}
+                    {new Date(cycle.end_date).toLocaleDateString('en-US', { timeZone: 'UTC' })})
                   </option>
                 ))}
               </select>
