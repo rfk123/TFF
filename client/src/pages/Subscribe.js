@@ -110,7 +110,7 @@ const SubscribeForm = () => {
                 const endDate = new Date(cycle.end_date);
     
                 const twoWeeksBeforeStart = new Date(startDate);
-                twoWeeksBeforeStart.setDate(startDate.getDate() - 14);
+                twoWeeksBeforeStart.setDate(startDate.getDate() - 28);
     
                 const twoWeeksBeforeEnd = new Date(endDate);
                 twoWeeksBeforeEnd.setDate(endDate.getDate() - 14);

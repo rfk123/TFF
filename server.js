@@ -258,7 +258,7 @@ app.post('/api/admin/notify-waitlist', async (req, res) => {
         from: process.env.EMAIL_USER,
         to: entry.email,
         subject: 'Announcement from Trent Family Farms',
-        text: 'We now have a new cycle open for sign-ups! Visit our site to learn more.',
+        text: 'We now have a new cycle open for sign-ups! Visit our site at shop.trentfamilyfarmsllc.com to learn more.',
       };
       await transporter.sendMail(mailOptions);
     }
@@ -395,7 +395,77 @@ app.get('/api/admin/subscriptions', (req, res) => {
     }
 });
 
-  
+// for manual creation
+app.post('/api/admin/subscriptions', async (req, res) => {
+  const {
+    name,
+    cycle_id,
+    pickup_site,
+    cartons_per_week,
+    total_amount,
+    donation_cartons,
+    second_email,
+    additional_notes,
+  } = req.body;
+
+  if (
+    !name ||
+    !cycle_id ||
+    !pickup_site ||
+    !cartons_per_week ||
+    total_amount == null
+  ) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  // We'll store the cycle_name text automatically or from the cycles table if needed
+  // For now, let's store egg_cycle as some placeholder or empty string
+  // Or you can retrieve the cycle_name from the cycles table if you want
+  let egg_cycle_text = '';
+
+  try {
+    // Optionally fetch cycle_name from cycles table
+    const cycleResult = await pool.query(
+      'SELECT cycle_name FROM cycles WHERE cycle_id = $1',
+      [cycle_id]
+    );
+    if (cycleResult.rows.length > 0) {
+      egg_cycle_text = cycleResult.rows[0].cycle_name;
+    }
+
+    const insertQuery = `
+      INSERT INTO subscriptions
+      (user_id, name, egg_cycle, pickup_site, cartons_per_week, total_amount, cycle_id, donation_cartons, second_email, additional_notes)
+      VALUES
+      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING *;
+    `;
+
+    const userId = '';  
+
+    const result = await pool.query(insertQuery, [
+      userId,
+      name,
+      egg_cycle_text,             
+      parseInt(pickup_site, 10),
+      parseInt(cartons_per_week, 10),
+      parseFloat(total_amount),
+      parseInt(cycle_id, 10),
+      parseInt(donation_cartons, 10) || 0,
+      second_email || '',
+      additional_notes || '',
+    ]);
+
+    return res.status(200).json({
+      message: 'Subscription created manually',
+      subscription: result.rows[0],
+    });
+  } catch (error) {
+    console.error('Error creating manual subscription:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 // Contact form submission route
 app.post('/submit-question', (req, res) => {
@@ -419,6 +489,42 @@ app.post('/submit-question', (req, res) => {
     res.status(200).json({ message: 'Question submitted successfully' });
   });
 });
+
+app.post('/api/admin/notify-waitlist', async (req, res) => {
+  const message = req.body.message || 'The wait is over! You can now subscribe at https://shop.trentfamilyfarmsllc.com';
+
+  try {
+    const getWaitlistQuery = `SELECT email FROM waitlist WHERE notified = false`;
+    const waitlistResult = await pool.query(getWaitlistQuery);
+    const entries = waitlistResult.rows; 
+
+    for (const entry of entries) {
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: entry.email,
+        subject: 'Notification from Trent Family Farms',
+        text: message,
+      };
+      await transporter.sendMail(mailOptions);
+    }
+
+    if (entries.length > 0) {
+      const updateQuery = `
+        UPDATE waitlist
+        SET notified = true
+        WHERE email = ANY ($1)
+      `;
+      const emailsToUpdate = entries.map(e => e.email);
+      await pool.query(updateQuery, [emailsToUpdate]);
+    }
+
+    return res.status(200).json({ message: 'Notifications sent and waitlist updated.' });
+  } catch (error) {
+    console.error('Error notifying waitlist:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 // Update route to add site with geocoding
 app.post('/api/admin/sites', async (req, res) => {
