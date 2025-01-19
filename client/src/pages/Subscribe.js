@@ -248,12 +248,14 @@ const SubscribeForm = () => {
         const bodyData = {
             userId, 
             name: formData.name, 
-            email,  
+            email,
+            secondEmail:formData.secondEmail || ' ',
             amount: Math.round(orderTotal * 100),
             cartonsPerWeek: formData.cartonsPerWeek,
             eggCycle: formData.eggCycle,  
             pickupSite: formData.pickupSite,
             donationCartons: formData.wantsToDonate != 'no' ? donationCartonCalculations(formData.wantsToDonate) : 0,
+            notes:formData.notes || ' ',
         };
 
         try {
@@ -387,6 +389,15 @@ const SubscribeForm = () => {
                 onChange={handleChange}
                 placeholder="Enter your name"
                 required
+              />
+<label htmlFor="name">Secondary Email:  (Optional: the email you used to sign up will be automatically used)</label>
+<input
+                type="text"
+                id="secondEmail"
+                name="secondEmail"
+                value={formData.secondEmail}
+                onChange={handleChange}
+                placeholder="Enter a secondary email"
               />
       
               <label htmlFor="eggCycle">Select Egg Cycle:</label>
