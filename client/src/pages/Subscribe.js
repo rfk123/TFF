@@ -55,7 +55,8 @@ const SubscribeForm = () => {
         pickupSite: '',
         wantsToDonate: 'no',
         donationCartons: '',
-        notes: ''
+        notes: '',
+        secondEmail: '',
     });
 
     const [availableSites, setAvailableSites] = useState([]);  
@@ -254,6 +255,8 @@ const SubscribeForm = () => {
             eggCycle: formData.eggCycle,  
             pickupSite: formData.pickupSite,
             donationCartons: formData.wantsToDonate != 'no' ? donationCartonCalculations(formData.wantsToDonate) : 0,
+            secondEmail:formData.secondEmail || ' ',
+            additionalNotes: formData.notes || ' ',
         };
 
         try {
@@ -388,7 +391,15 @@ const SubscribeForm = () => {
                 placeholder="Enter your name"
                 required
               />
-      
+              <label htmlFor="name">Secondary Email (Optional: the email you used to sign up will be automatically used):</label>
+              <input
+                type="text"
+                id="secondEmail"
+                name="secondEmail"
+                value={formData.secondEmail}
+                onChange={handleChange}
+                placeholder="Enter a secondary email"
+              />
               <label htmlFor="eggCycle">Select Egg Cycle:</label>
               <select
                 id="eggCycle"
