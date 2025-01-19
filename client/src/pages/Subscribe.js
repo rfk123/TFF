@@ -53,7 +53,7 @@ const SubscribeForm = () => {
         eggCycle: '',
         cartonsPerWeek: '',
         pickupSite: '',
-        wantsToDonate: 'no',
+        wantsToDonate: 'full',
         donationCartons: '',
         notes: '',
         secondEmail: '',
@@ -391,7 +391,7 @@ const SubscribeForm = () => {
                 placeholder="Enter your name"
                 required
               />
-              <label htmlFor="name">Secondary Email (Optional: the email you used to sign up will be automatically used):</label>
+              <label htmlFor="name">Secondary Email (Optional if you want someone else to also receive emails about this subscription):</label>
               <input
                 type="text"
                 id="secondEmail"
