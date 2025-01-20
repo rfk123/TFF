@@ -461,7 +461,7 @@ const SubscribeForm = () => {
                   Any additional financial donation you make now will go toward those
                   subscriptions.
                 </div>
-              <select
+              {/* <select
                 id="wantsToDonate"
                 name="wantsToDonate"
                 value={formData.wantsToDonate}
@@ -477,18 +477,46 @@ const SubscribeForm = () => {
                 <option value="3">Donate 3 dozen ${(cartonPrice*3).toFixed(2)}</option>
                 <option value="2">Donate 2 dozen ${(cartonPrice*2).toFixed(2)}</option>
                 <option value="1">Donate 1 dozen ${cartonPrice.toFixed(2)}</option>
-
-                {/* <option value="1">Donate 1 dozen ${cartonPrice.toFixed(2)}</option>
-                <option value="2">Donate 2 dozen ${(cartonPrice*2).toFixed(2)}</option>
-                <option value="3">Donate 3 dozen ${(cartonPrice*3).toFixed(2)}</option>
-                <option value="4">Donate 4 dozen ${(cartonPrice*4).toFixed(2)}</option>
-                <option value="5">Donate 5 dozen ${(cartonPrice*5).toFixed(2)}</option>
-                <option value="half">Donate a half subscription for the season ({(remainingWeeks * cartonPrice).toFixed(2)} dozen)</option>
-                <option value="3/4">Donate 3/4 of a subscription for the season ({(remainingWeeks * cartonPrice).toFixed(2)} dozen)</option>
-                <option value="full">Donate a full subscription for the season ({(remainingWeeks * cartonPrice).toFixed(2)} dozen)</option> */}
-  
                 
+              </select> */}
+              <select
+                id="wantsToDonate"
+                name="wantsToDonate"
+                value={formData.wantsToDonate}
+                onChange={handleChange}
+                required
+              >
+                <option value="no">No Donation</option>
+                {formData.eggCycle && (
+                  <>
+                    <option value="full">
+                      Donate a full subscription for the season ({selectedTotalWeeks} dozen) $
+                      {(selectedTotalWeeks * cartonPrice).toFixed(2)}
+                    </option>
+                    <option value="3/4">
+                      Donate 3/4 of a subscription for the season ({Math.round(selectedTotalWeeks * 0.75)} dozen) $
+                      {(Math.round(selectedTotalWeeks * 0.75) * cartonPrice).toFixed(2)}
+                    </option>
+                    <option value="half">
+                      Donate a half subscription for the season ({Math.round(selectedTotalWeeks * 0.5)} dozen) $
+                      {(Math.round(selectedTotalWeeks * 0.5) * cartonPrice).toFixed(2)}
+                    </option>
+                  </>
+                )}
+                {!formData.eggCycle && (
+                  <>
+                    <option value="full">Donate a full subscription for the season</option>
+                    <option value="3/4">Donate 3/4 of a subscription for the season</option>
+                    <option value="half">Donate a half subscription for the season</option>
+                  </>
+                )}
+                <option value="5">Donate 5 dozen ${(cartonPrice * 5).toFixed(2)}</option>
+                <option value="4">Donate 4 dozen ${(cartonPrice * 4).toFixed(2)}</option>
+                <option value="3">Donate 3 dozen ${(cartonPrice * 3).toFixed(2)}</option>
+                <option value="2">Donate 2 dozen ${(cartonPrice * 2).toFixed(2)}</option>
+                <option value="1">Donate 1 dozen ${cartonPrice.toFixed(2)}</option>
               </select>
+
       
               {/*{formData.wantsToDonate !== 'no' && (
                 <>
