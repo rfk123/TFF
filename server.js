@@ -53,7 +53,7 @@ const sendConfirmationEmail = (email, name, eggCycleName, pickupSiteName, pickup
     console.log('Sending email for cycle:', eggCycleName);  // for debugging
     
     const mailOptions = {
-        from: 'your_email@gmail.com',
+        from: process.env.EMAIL_USER,
         to: email,
         subject: 'Subscription Confirmation',
         html: `Hello ${name},<br><br>
