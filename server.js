@@ -92,7 +92,7 @@ const sendConfirmationEmail = (email, name, eggCycleName, pickupSiteName, pickup
 
 const getCurrentCycle = (callback) => {
   const today = new Date().toISOString().slice(0, 10); // format as YYYY-MM-DD
-  console.log('Formatted today\'s date:', today); // for debugging
+  // console.log('Formatted today\'s date:', today); // for debugging
 
   const query = `
     SELECT cycle_id, cycle_name, start_date, end_date 
@@ -145,20 +145,20 @@ app.use((req, res, next) => {
 
 // checkout session route
 app.post('/create-checkout-session', async (req, res) => {
-    console.log('Received data from frontend:', req.body);
+    // console.log('Received data from frontend:', req.body);
   
     const { userId, name, email, amount, cartonsPerWeek, pickupSite, donationCartons, eggCycle, secondEmail, additionalNotes } = req.body;
     const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:4242';
   
     // ensure that required fields are present
     if (!userId || !name || !amount || !cartonsPerWeek || !pickupSite || !eggCycle || !email) {
-      console.log('Missing required fields:', req.body);
+      // console.log('Missing required fields:', req.body);
       return res.status(400).send('Missing required fields');
     }
   
     // creating Stripe Checkout session from FE data
     try {
-      console.log('Creating Stripe Checkout session...');
+      // console.log('Creating Stripe Checkout session...');
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         customer_email: email,
@@ -189,7 +189,7 @@ app.post('/create-checkout-session', async (req, res) => {
         }
       });
   
-      console.log('Stripe session created successfully:', session.id);
+      // console.log('Stripe session created successfully:', session.id);
       res.json({ id: session.id });  
     } catch (error) {
       console.error('Error creating Stripe Checkout session:', error);
@@ -377,7 +377,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    console.log('Session metadata:', session.metadata);
+    // console.log('Session metadata:', session.metadata);
 
     // Extract fields from session.metadata
     const {
@@ -795,7 +795,7 @@ app.post('/api/closest-site', (req, res) => {
       return res.status(500).send('Error fetching closest site');
     }
 
-    console.log('Results:', result.rows); // for debug
+    // console.log('Results:', result.rows); // for debug
     if (result.rows.length === 0) {
       return res.status(404).send('No sites found');
     }
@@ -958,7 +958,7 @@ app.get('/api/admin/download-orders/:cycleId/:siteId', (req, res) => {
     const cycleId = decodeURIComponent(req.params.cycleId);
     const siteId = parseInt(decodeURIComponent(req.params.siteId), 10);
   
-    console.log(`Received cycleId: ${cycleId}, siteId: ${siteId}`);
+    // console.log(`Received cycleId: ${cycleId}, siteId: ${siteId}`);
   
     const query = `
       SELECT s.name, s.cartons_per_week, st.site_name, st.site_address, c.cycle_name
