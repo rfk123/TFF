@@ -68,6 +68,8 @@ const sendConfirmationEmail = (email, name, eggCycleName, pickupSiteName, pickup
         <b>Pickup Start Day:</b> ${pickupStartDay}<br>
         <b>Pickup Deadline Day:</b> ${pickupDeadlineDay}<br><br>
       
+        The exact address of your pickup site will be emailed to you a few days before the first pickup.<br><br>
+
         View more information on your order through your user profile!<br><br>
       
         If you have questions, please reach out to Amy Stork at <a href="mailto:amystork@gmail.com">amystork@gmail.com</a>.<br><br>
