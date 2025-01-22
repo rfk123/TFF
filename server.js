@@ -361,121 +361,6 @@ app.post('/api/admin/notify-waitlist', async (req, res) => {
 //     }
 //   });
   
-//here is the working one
-// app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-//   const sig = req.headers['stripe-signature'];
-//   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-//   let event;
-//   try {
-//     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-//   } catch (err) {
-//     console.error('Webhook signature verification failed:', err.message);
-//     return res.status(400).send(`Webhook Error: ${err.message}`);
-//   }
-
-//   if (event.type === 'checkout.session.completed') {
-//     const session = event.data.object;
-//     // console.log('Session metadata:', session.metadata);
-
-//     // Extract fields from session.metadata
-//     const {
-//       userId,
-//       name,
-//       cartonsPerWeek,
-//       pickupSite,
-//       donationCartons,
-//       cycleId,          // numeric cycle ID from the front-end
-//       secondEmail = ' ',
-//       additionalNotes = ' ',
-//     } = session.metadata;
-
-//     // Convert numeric strings to numbers
-//     const numericCartonsPerWeek = parseInt(cartonsPerWeek, 10) || 0;
-//     const numericPickupSite = parseInt(pickupSite, 10) || 0;
-//     const numericCycleId = parseInt(cycleId, 10) || 0;
-//     const numericDonationCartons = parseInt(donationCartons, 10) || 0;
-
-//     // 1) Look up the cycle name and site details from the database
-//     let cycleName = 'Unknown Cycle';
-//     let siteName = 'Unknown Site';
-//     let siteAddress = 'No address';
-//     let siteInstructions = '';
-//     let pickupStartDay = '';
-//     let pickupDeadlineDay = '';
-
-//     try {
-//       const query = `
-//         SELECT c.cycle_name,
-//                s.site_name,
-//                s.site_address,
-//                s.site_instructions,
-//                s.pickup_start_day,
-//                s.pickup_deadline_day
-//         FROM cycles c
-//         JOIN sites s ON s.site_id = $1
-//         WHERE c.cycle_id = $2
-//       `;
-//       const cycleResult = await pool.query(query, [numericPickupSite, numericCycleId]);
-
-//       if (cycleResult.rows.length > 0) {
-//         cycleName = cycleResult.rows[0].cycle_name;
-//         siteName = cycleResult.rows[0].site_name;
-//         siteAddress = cycleResult.rows[0].site_address;
-//         siteInstructions = cycleResult.rows[0].site_instructions;
-//         pickupStartDay = cycleResult.rows[0].pickup_start_day;
-//         pickupDeadlineDay = cycleResult.rows[0].pickup_deadline_day;
-//       }
-//     } catch (err) {
-//       console.error('Error fetching cycle/site details:', err);
-//       return res.status(500).send('Error fetching cycle/site details');
-//     }
-
-//     // 2) Insert subscription data into your table
-//     try {
-//       const insertQuery = `
-//         INSERT INTO subscriptions
-//           (user_id, name, cartons_per_week, egg_cycle, pickup_site, total_amount, cycle_id, donation_cartons, second_email, additional_notes)
-//         VALUES
-//           ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-//       `;
-//       await pool.query(insertQuery, [
-//         userId,
-//         name,
-//         numericCartonsPerWeek,
-//         cycleName,                  // store the fetched cycle name
-//         numericPickupSite,
-//         session.amount_total / 100, // Stripe amount is in cents
-//         numericCycleId,
-//         numericDonationCartons,
-//         secondEmail,
-//         additionalNotes,
-//       ]);
-
-//       // 3) Send confirmation email
-//       sendConfirmationEmail(
-//         session.customer_email,
-//         name,
-//         cycleName,
-//         siteName,
-//         siteAddress,
-//         siteInstructions,
-//         pickupStartDay,
-//         pickupDeadlineDay,
-//         session.amount_total / 100
-//       );
-
-//       return res.status(200).send('Webhook received and email sent');
-//     } catch (err) {
-//       console.error('Error inserting subscription data:', err);
-//       return res.status(500).send('Error inserting subscription data');
-//     }
-//   } else {
-//     // For all other event types, just acknowledge
-//     return res.status(200).send('Webhook received');
-//   }
-// });
-
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -490,33 +375,27 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const meta = session.metadata || {};
+    // console.log('Session metadata:', session.metadata);
 
-    // Extract the "new" metadata fields your updated code expects
-    let {
+    // Extract fields from session.metadata
+    const {
       userId,
       name,
       cartonsPerWeek,
       pickupSite,
       donationCartons,
-      cycleId,             // new key in your code
+      cycleId,          // numeric cycle ID from the front-end
       secondEmail = ' ',
       additionalNotes = ' ',
-    } = meta;
+    } = session.metadata;
 
-    // FALLBACK: if cycleId is missing, but we do have "cycle_id" (old code),
-    // then use that instead
-    if (!cycleId && meta.cycle_id) {
-      cycleId = meta.cycle_id; // e.g. "101"
-    }
-
-    // Convert key fields to numbers
+    // Convert numeric strings to numbers
     const numericCartonsPerWeek = parseInt(cartonsPerWeek, 10) || 0;
     const numericPickupSite = parseInt(pickupSite, 10) || 0;
     const numericCycleId = parseInt(cycleId, 10) || 0;
     const numericDonationCartons = parseInt(donationCartons, 10) || 0;
 
-    // 1) Look up the cycle name & site details from the DB
+    // 1) Look up the cycle name and site details from the database
     let cycleName = 'Unknown Cycle';
     let siteName = 'Unknown Site';
     let siteAddress = 'No address';
@@ -536,22 +415,22 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
         JOIN sites s ON s.site_id = $1
         WHERE c.cycle_id = $2
       `;
-      const result = await pool.query(query, [numericPickupSite, numericCycleId]);
+      const cycleResult = await pool.query(query, [numericPickupSite, numericCycleId]);
 
-      if (result.rows.length > 0) {
-        cycleName = result.rows[0].cycle_name;
-        siteName = result.rows[0].site_name;
-        siteAddress = result.rows[0].site_address;
-        siteInstructions = result.rows[0].site_instructions;
-        pickupStartDay = result.rows[0].pickup_start_day;
-        pickupDeadlineDay = result.rows[0].pickup_deadline_day;
+      if (cycleResult.rows.length > 0) {
+        cycleName = cycleResult.rows[0].cycle_name;
+        siteName = cycleResult.rows[0].site_name;
+        siteAddress = cycleResult.rows[0].site_address;
+        siteInstructions = cycleResult.rows[0].site_instructions;
+        pickupStartDay = cycleResult.rows[0].pickup_start_day;
+        pickupDeadlineDay = cycleResult.rows[0].pickup_deadline_day;
       }
     } catch (err) {
       console.error('Error fetching cycle/site details:', err);
       return res.status(500).send('Error fetching cycle/site details');
     }
 
-    // 2) Insert subscription data
+    // 2) Insert subscription data into your table
     try {
       const insertQuery = `
         INSERT INTO subscriptions
@@ -563,9 +442,9 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
         userId,
         name,
         numericCartonsPerWeek,
-        cycleName,                    // store the cycle's name into egg_cycle
+        cycleName,                  // store the fetched cycle name
         numericPickupSite,
-        session.amount_total / 100,   // Stripe amount is in cents
+        session.amount_total / 100, // Stripe amount is in cents
         numericCycleId,
         numericDonationCartons,
         secondEmail,
