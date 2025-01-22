@@ -218,7 +218,7 @@ const SubscribeForm = () => {
         default:
           break;
       }
-      console.log(cartons)
+      // console.log(cartons)
       return cartons
     }
 
