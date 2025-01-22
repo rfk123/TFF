@@ -203,13 +203,13 @@ const SubscribeForm = () => {
           cartons = 5
           break;
         case 'half':
-          cartons = Math.round((selectedTotalWeeks * parseInt(formData.cartonsPerWeek))/2)
+          cartons = Math.round(selectedTotalWeeks * 0.5)
           break;
         case '3/4':
-          cartons = Math.round((3/4)*(selectedTotalWeeks * parseInt(formData.cartonsPerWeek)))
+          cartons = Math.round(0.75 * selectedTotalWeeks)
           break;
         case 'full':
-          cartons = selectedTotalWeeks * parseInt(formData.cartonsPerWeek)
+          cartons = selectedTotalWeeks
           break;
         case 'no':
           cartons = 0
@@ -247,16 +247,19 @@ const SubscribeForm = () => {
         const email = currentUser.email; 
 
         const bodyData = {
-            userId, 
-            name: formData.name, 
-            email,  
-            amount: Math.round(orderTotal * 100),
-            cartonsPerWeek: formData.cartonsPerWeek,
-            eggCycle: formData.eggCycle,  
-            pickupSite: formData.pickupSite,
-            donationCartons: formData.wantsToDonate != 'no' ? donationCartonCalculations(formData.wantsToDonate) : 0,
-            secondEmail:formData.secondEmail || ' ',
-            additionalNotes: formData.notes || ' ',
+          userId, 
+          name: formData.name, 
+          email,  
+          amount: Math.round(orderTotal * 100),
+          cartonsPerWeek: formData.cartonsPerWeek,
+          eggCycle: formData.eggCycle,    
+          pickupSite: formData.pickupSite,
+          donationCartons: 
+          formData.wantsToDonate !== 'no' 
+          ? donationCartonCalculations(formData.wantsToDonate) 
+          : 0,
+          secondEmail: formData.secondEmail || ' ',
+          additionalNotes: formData.notes || ' ',
         };
 
         try {

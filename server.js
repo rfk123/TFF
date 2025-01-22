@@ -70,8 +70,6 @@ const sendConfirmationEmail = (email, name, eggCycleName, pickupSiteName, pickup
       
         View more information on your order through your user profile!<br><br>
       
-        Since Thanksgiving is on a Thursday, the eggs will be delivered on Wednesday, November 27 that week (the day before Thanksgiving).<br><br>
-      
         If you have questions, please reach out to Amy Stork at <a href="mailto:amystork@gmail.com">amystork@gmail.com</a>.<br><br>
       
         <b>NOTE:</b> Mike is just one guy, and he's affected by weather, traffic, and all the other dropoffs he does on his days in town (restaurants, grocery stores, and NE CSA sites), so occasionally he gets behind schedule. If YOU have a super tight schedule, and/or live far away from your pickup site, I recommend giving a little bit of a cushion after the target delivery times.<br><br>
@@ -183,9 +181,9 @@ app.post('/create-checkout-session', async (req, res) => {
           cartonsPerWeek,
           pickupSite,
           donationCartons,
-          cycle_id: eggCycle,  
-          secondEmail: secondEmail || ' ', 
-          additionalNotes: additionalNotes || ' '         
+          cycleId: eggCycle, 
+          secondEmail: secondEmail || ' ',
+          additionalNotes: additionalNotes || ' '
         }
       });
   
@@ -283,86 +281,200 @@ app.post('/api/admin/notify-waitlist', async (req, res) => {
 
 
 // stripe webhook (requires raw body parsing)
-app.post('/webhook', express.raw({ type: 'application/json' }), (request, response) => {
-    const sig = request.headers['stripe-signature'];
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+// app.post('/webhook', express.raw({ type: 'application/json' }), (request, response) => {
+//     const sig = request.headers['stripe-signature'];
+//     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   
-    let event;
-    try {
-      event = stripe.webhooks.constructEvent(request.body, sig, webhookSecret);
-    } catch (err) {
-      console.error('Webhook signature verification failed:', err.message);
-      return response.status(400).send(`Webhook Error: ${err.message}`);
-    }
+//     let event;
+//     try {
+//       event = stripe.webhooks.constructEvent(request.body, sig, webhookSecret);
+//     } catch (err) {
+//       console.error('Webhook signature verification failed:', err.message);
+//       return response.status(400).send(`Webhook Error: ${err.message}`);
+//     }
   
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object;
-      console.log('Session metadata:', session.metadata);
+//     if (event.type === 'checkout.session.completed') {
+//       const session = event.data.object;
+//       console.log('Session metadata:', session.metadata);
       
-      const insertQuery = `
-        INSERT INTO subscriptions (user_id, name, cartons_per_week, egg_cycle, pickup_site, total_amount, cycle_id, donation_cartons, second_email, additional_notes)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      `;
+//       const insertQuery = `
+//         INSERT INTO subscriptions (user_id, name, cartons_per_week, egg_cycle, pickup_site, total_amount, cycle_id, donation_cartons, second_email, additional_notes)
+//         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+//       `;
     
-      // query to get the egg cycle name and full pickup site details
-      const cycleQuery = `
-        SELECT c.cycle_name, s.site_name, s.site_address, s.site_instructions, s.pickup_start_day, s.pickup_deadline_day 
-        FROM cycles c 
+//       // query to get the egg cycle name and full pickup site details
+//       const cycleQuery = `
+//         SELECT c.cycle_name, s.site_name, s.site_address, s.site_instructions, s.pickup_start_day, s.pickup_deadline_day 
+//         FROM cycles c 
+//         JOIN sites s ON s.site_id = $1
+//         WHERE c.cycle_id = $2
+//       `;
+  
+//       pool.query(cycleQuery, [session.metadata.pickupSite, session.metadata.cycle_id], (err, result) => {
+//         if (err) {
+//           console.error('Error fetching cycle and site details:', err);
+//           return response.status(500).send('Error fetching cycle and site details');
+//         }
+  
+//         const eggCycleName = result.rows[0].cycle_name;
+//         const pickupSiteName = result.rows[0].site_name;
+//         const pickupSiteAddress = result.rows[0].site_address;
+//         const pickupSiteInstructions = result.rows[0].site_instructions;
+//         const pickupStartDay = result.rows[0].pickup_start_day;
+//         const pickupDeadlineDay = result.rows[0].pickup_deadline_day;
+  
+//         // insert subscription data
+//         pool.query(insertQuery, [
+//           session.metadata.userId,
+//           session.metadata.name,
+//           parseInt(session.metadata.cartonsPerWeek, 10),
+//           session.metadata.eggCycle,
+//           parseInt(session.metadata.pickupSite, 10),
+//           session.amount_total / 100,
+//           parseInt(session.metadata.cycle_id, 10),
+//           parseInt(session.metadata.donationCartons, 10) || 0,
+//           session.metadata.secondEmail || ' ', 
+//           session.metadata.additionalNotes || ' ' 
+//         ], (err, result) => {
+//           if (err) {
+//             console.error('Error inserting subscription data:', err);
+//             return response.status(500).send('Error inserting subscription data');
+//           }
+  
+//           //confirmation email with full site details
+//           sendConfirmationEmail(
+//             session.customer_email,
+//             session.metadata.name,
+//             eggCycleName,                    
+//             pickupSiteName,                 
+//             pickupSiteAddress,               
+//             pickupSiteInstructions,          
+//             pickupStartDay,                  
+//             pickupDeadlineDay,               
+//             session.amount_total / 100       
+//           );
+//           response.status(200).send('Webhook received and email sent');
+//         });
+//       });
+//     } else {
+//       response.status(200).send('Webhook received');
+//     }
+//   });
+  
+app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    console.log('Session metadata:', session.metadata);
+
+    // Extract fields from session.metadata
+    const {
+      userId,
+      name,
+      cartonsPerWeek,
+      pickupSite,
+      donationCartons,
+      cycleId,          // numeric cycle ID from the front-end
+      secondEmail = ' ',
+      additionalNotes = ' ',
+    } = session.metadata;
+
+    // Convert numeric strings to numbers
+    const numericCartonsPerWeek = parseInt(cartonsPerWeek, 10) || 0;
+    const numericPickupSite = parseInt(pickupSite, 10) || 0;
+    const numericCycleId = parseInt(cycleId, 10) || 0;
+    const numericDonationCartons = parseInt(donationCartons, 10) || 0;
+
+    // 1) Look up the cycle name and site details from the database
+    let cycleName = 'Unknown Cycle';
+    let siteName = 'Unknown Site';
+    let siteAddress = 'No address';
+    let siteInstructions = '';
+    let pickupStartDay = '';
+    let pickupDeadlineDay = '';
+
+    try {
+      const query = `
+        SELECT c.cycle_name,
+               s.site_name,
+               s.site_address,
+               s.site_instructions,
+               s.pickup_start_day,
+               s.pickup_deadline_day
+        FROM cycles c
         JOIN sites s ON s.site_id = $1
         WHERE c.cycle_id = $2
       `;
-  
-      pool.query(cycleQuery, [session.metadata.pickupSite, session.metadata.cycle_id], (err, result) => {
-        if (err) {
-          console.error('Error fetching cycle and site details:', err);
-          return response.status(500).send('Error fetching cycle and site details');
-        }
-  
-        const eggCycleName = result.rows[0].cycle_name;
-        const pickupSiteName = result.rows[0].site_name;
-        const pickupSiteAddress = result.rows[0].site_address;
-        const pickupSiteInstructions = result.rows[0].site_instructions;
-        const pickupStartDay = result.rows[0].pickup_start_day;
-        const pickupDeadlineDay = result.rows[0].pickup_deadline_day;
-  
-        // insert subscription data
-        pool.query(insertQuery, [
-          session.metadata.userId,
-          session.metadata.name,
-          parseInt(session.metadata.cartonsPerWeek, 10),
-          session.metadata.eggCycle,
-          parseInt(session.metadata.pickupSite, 10),
-          session.amount_total / 100,
-          parseInt(session.metadata.cycle_id, 10),
-          parseInt(session.metadata.donationCartons, 10) || 0,
-          session.metadata.secondEmail || ' ', 
-          session.metadata.additionalNotes || ' ' 
-        ], (err, result) => {
-          if (err) {
-            console.error('Error inserting subscription data:', err);
-            return response.status(500).send('Error inserting subscription data');
-          }
-  
-          //confirmation email with full site details
-          sendConfirmationEmail(
-            session.customer_email,
-            session.metadata.name,
-            eggCycleName,                    
-            pickupSiteName,                 
-            pickupSiteAddress,               
-            pickupSiteInstructions,          
-            pickupStartDay,                  
-            pickupDeadlineDay,               
-            session.amount_total / 100       
-          );
-          response.status(200).send('Webhook received and email sent');
-        });
-      });
-    } else {
-      response.status(200).send('Webhook received');
+      const cycleResult = await pool.query(query, [numericPickupSite, numericCycleId]);
+
+      if (cycleResult.rows.length > 0) {
+        cycleName = cycleResult.rows[0].cycle_name;
+        siteName = cycleResult.rows[0].site_name;
+        siteAddress = cycleResult.rows[0].site_address;
+        siteInstructions = cycleResult.rows[0].site_instructions;
+        pickupStartDay = cycleResult.rows[0].pickup_start_day;
+        pickupDeadlineDay = cycleResult.rows[0].pickup_deadline_day;
+      }
+    } catch (err) {
+      console.error('Error fetching cycle/site details:', err);
+      return res.status(500).send('Error fetching cycle/site details');
     }
-  });
-  
+
+    // 2) Insert subscription data into your table
+    try {
+      const insertQuery = `
+        INSERT INTO subscriptions
+          (user_id, name, cartons_per_week, egg_cycle, pickup_site, total_amount, cycle_id, donation_cartons, second_email, additional_notes)
+        VALUES
+          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `;
+      await pool.query(insertQuery, [
+        userId,
+        name,
+        numericCartonsPerWeek,
+        cycleName,                  // store the fetched cycle name
+        numericPickupSite,
+        session.amount_total / 100, // Stripe amount is in cents
+        numericCycleId,
+        numericDonationCartons,
+        secondEmail,
+        additionalNotes,
+      ]);
+
+      // 3) Send confirmation email
+      sendConfirmationEmail(
+        session.customer_email,
+        name,
+        cycleName,
+        siteName,
+        siteAddress,
+        siteInstructions,
+        pickupStartDay,
+        pickupDeadlineDay,
+        session.amount_total / 100
+      );
+
+      return res.status(200).send('Webhook received and email sent');
+    } catch (err) {
+      console.error('Error inserting subscription data:', err);
+      return res.status(500).send('Error inserting subscription data');
+    }
+  } else {
+    // For all other event types, just acknowledge
+    return res.status(200).send('Webhook received');
+  }
+});
+
 
 // Fetch subscriptions for admin
 app.get('/api/admin/subscriptions', (req, res) => {
