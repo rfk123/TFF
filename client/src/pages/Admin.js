@@ -30,6 +30,7 @@ const Admin = () => {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
+  const [selectedCycleForDownload, setSelectedCycleForDownload] = useState('');
   const [selectedCycleForTable, setSelectedCycleForTable] = useState('');
 
   const handleSendMassEmail = async () => {
@@ -567,6 +568,45 @@ const saveCycle = async (id) => {
     }
   };
 
+  const downloadCycleOrders = async () => {
+    if (!selectedCycleForDownload) {
+      alert('Please select a cycle first!');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/download-cycle-orders/${selectedCycleForDownload}`);
+      if (!response.ok) {
+        throw new Error(`Failed to download cycle orders: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      // same approach as "downloadAllOrders" method:
+      const blob = new Blob(
+        [
+          new Uint8Array(
+            atob(data.data)
+              .split('')
+              .map((c) => c.charCodeAt(0))
+          )
+        ],
+        {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        }
+      );
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', data.filename);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading cycle orders:', error);
+      alert('Error downloading cycle orders');
+    }
+  };
+
   return (
     <div className="admin-dashboard">
       <h1>Admin Dashboard</h1>
@@ -747,8 +787,25 @@ const saveCycle = async (id) => {
       <hr />
       {/* Download All Orders Section */}
       <section>
-        <h2>Download All Subscription Orders</h2>
-        <button onClick={downloadAllOrders}>Download All Orders</button>
+        <h2>Download Orders for a Specific Cycle</h2>
+
+        <label>Select Cycle to Download:</label>
+        <select
+          value={selectedCycleForDownload}
+          onChange={(e) => setSelectedCycleForDownload(e.target.value)}
+        >
+          <option value="">-- Select Cycle --</option>
+          {cycles.map((cycle) => (
+            <option key={cycle.cycle_id} value={cycle.cycle_id}>
+              {cycle.cycle_name} ({new Date(cycle.start_date).toLocaleDateString()} -{' '}
+              {new Date(cycle.end_date).toLocaleDateString()})
+            </option>
+          ))}
+        </select>
+
+        <button onClick={downloadCycleOrders} disabled={!selectedCycleForDownload}>
+          Download This Cycle's Orders
+        </button>
       </section>
       <hr />
       {/* Subscriptions Section */}

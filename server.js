@@ -1017,6 +1017,88 @@ app.get('/api/admin/download-orders/:cycleId/:siteId', (req, res) => {
     });
   });  
   
+  app.get('/api/admin/download-cycle-orders/:cycleId', async (req, res) => {
+    try {
+      const cycleId = parseInt(req.params.cycleId, 10);
+      if (isNaN(cycleId)) {
+        return res.status(400).json({ error: 'Invalid cycle ID' });
+      }
+  
+      const query = `
+        SELECT
+          s.user_id,
+          s.name,
+          s.cartons_per_week,
+          s.donation_cartons,
+          s.second_email,
+          s.additional_notes,
+          s.total_amount,
+          c.cycle_name,
+          st.site_name,
+          st.site_address
+        FROM subscriptions s
+        JOIN cycles c ON s.cycle_id = c.cycle_id
+        JOIN sites st ON s.pickup_site = st.site_id
+        WHERE s.cycle_id = $1
+      `;
+      const result = await pool.query(query, [cycleId]);
+      const subscriptions = result.rows;
+  
+      if (subscriptions.length === 0) {
+        return res.status(404).json({ error: 'No subscriptions found for that cycle.' });
+      }
+  
+      const subscriptionsWithEmail = [];
+      for (const sub of subscriptions) {
+        let userEmail = '';
+        try {
+          if (sub.user_id) {
+            const userRecord = await admin.auth().getUser(sub.user_id);
+            userEmail = userRecord.email;
+          }
+        } catch (error) {
+          console.error(`Error fetching Firebase user for user_id=${sub.user_id}:`, error);
+          userEmail = '[unknown or deleted user]';
+        }
+  
+        subscriptionsWithEmail.push({
+          ...sub,
+          user_email: userEmail,
+        });
+      }
+      const workbook = xlsx.utils.book_new();
+  
+      const worksheetData = subscriptionsWithEmail.map((sub) => ({
+        Name: sub.name,
+        Email: sub.user_email,
+        'Second Email': sub.second_email || '',
+        'Cartons/Week': sub.cartons_per_week,
+        'Donation Cartons': sub.donation_cartons,
+        'Total Amount': sub.total_amount,
+        'Additional Notes': sub.additional_notes || '',
+        'Cycle Name': sub.cycle_name,
+        'Site Name': sub.site_name,
+        'Site Address': sub.site_address,
+      }));
+  
+      const worksheet = xlsx.utils.json_to_sheet(worksheetData);
+      xlsx.utils.book_append_sheet(workbook, worksheet, 'Cycle Orders');
+  
+      const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+  
+      const fileName = `cycle-${cycleId}-orders.xlsx`;
+  
+      return res.json({
+        success: true,
+        filename: fileName,
+        data: buffer.toString('base64'),
+      });
+    } catch (err) {
+      console.error('Error downloading cycle orders:', err);
+      return res.status(500).json({ error: 'Server error downloading cycle orders' });
+    }
+  });
+  
 
 // Fetch total cartons for a specific cycle and site
 app.get('/api/admin/total-cartons/:cycleId/:siteId', (req, res) => {
