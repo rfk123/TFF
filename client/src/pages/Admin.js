@@ -33,6 +33,9 @@ const Admin = () => {
   const [selectedCycleForDownload, setSelectedCycleForDownload] = useState('');
   const [selectedCycleForTable, setSelectedCycleForTable] = useState('');
 
+  const [editingSubId, setEditingSubId] = useState(null);
+  const [editedSubscription, setEditedSubscription] = useState({});
+
   const handleSendMassEmail = async () => {
     if (!emailMessage.trim()) {
       alert('Please enter a message.');
@@ -568,6 +571,74 @@ const saveCycle = async (id) => {
     }
   };
 
+  const downloadWaitlist = async () => {
+    try {
+      const response = await fetch('/api/admin/download-waitlist');
+      const data = await response.json();
+  
+      if (!response.ok) {
+        throw new Error(`Failed to download waitlist: ${response.statusText}`);
+      }
+  
+      const blob = new Blob(
+        [
+          new Uint8Array(
+            atob(data.data)
+              .split('')
+              .map((c) => c.charCodeAt(0))
+          ),
+        ],
+        {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        }
+      );
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', data.filename);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading waitlist:', error);
+    }
+  };
+  
+  // Called when the admin clicks the "Edit" button for a subscription.
+  const startEditing = (sub) => {
+    setEditingSubId(sub.id);
+    // Pre-fill our edit state with the current subscription details.
+    setEditedSubscription(sub);
+  };
+
+  const cancelEditing = () => {
+    setEditingSubId(null);
+    setEditedSubscription({});
+  };
+
+  const saveEditedSubscription = async (id) => {
+    try {
+      const response = await fetch(`/api/admin/subscriptions/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editedSubscription)
+      });
+      if (response.ok) {
+        alert("Subscription updated successfully");
+        setEditingSubId(null);
+        setEditedSubscription({});
+        // Refresh the subscriptions list:
+        fetchSubscriptions();
+      } else {
+        const data = await response.json();
+        alert("Error updating subscription: " + (data.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error("Error updating subscription", err);
+      alert("Error updating subscription");
+    }
+  };
+  
   const downloadCycleOrders = async () => {
     if (!selectedCycleForDownload) {
       alert('Please select a cycle first!');
@@ -629,10 +700,6 @@ const saveCycle = async (id) => {
       </section>
       <hr />
       <section>
-        <h2>Notify Waitlist</h2>
-        <button onClick={notifyWaitlist}>Notify All Waitlist Emails</button>
-      </section>
-      <section>
         <h2>Manually Add a New Subscription</h2>
         <form onSubmit={addManualSubscription} style={{ marginBottom: '2rem' }}>
           
@@ -645,6 +712,17 @@ const saveCycle = async (id) => {
                 setNewSubscription({ ...newSubscription, name: e.target.value })
               }
               required
+            />
+          </label>
+
+          <label>
+            Email:
+            <input
+              type="text"
+              value={newSubscription.second_email}
+              onChange={(e) =>
+                setNewSubscription({ ...newSubscription, second_email: e.target.value })
+              }
             />
           </label>
 
@@ -727,17 +805,6 @@ const saveCycle = async (id) => {
           </label>
 
           <label>
-            Second Email (optional):
-            <input
-              type="text"
-              value={newSubscription.second_email}
-              onChange={(e) =>
-                setNewSubscription({ ...newSubscription, second_email: e.target.value })
-              }
-            />
-          </label>
-
-          <label>
             Additional Notes (optional):
             <input
               type="text"
@@ -753,6 +820,10 @@ const saveCycle = async (id) => {
 
           <button type="submit">Add Subscription</button>
         </form>
+      </section>
+      <section>
+        <h2>Notify Waitlist</h2>
+        <button onClick={notifyWaitlist}>Notify All Waitlist Emails</button>
       </section>
       {/* Send Mass Email Section */}
       <section>
@@ -806,6 +877,10 @@ const saveCycle = async (id) => {
         <button onClick={downloadCycleOrders} disabled={!selectedCycleForDownload}>
           Download This Cycle's Orders
         </button>
+        <hr />
+        <button onClick={downloadAllOrders}>Download All Subscriptions</button>
+        <hr />
+        <button onClick={downloadWaitlist}>Download Waitlist</button>
       </section>
       <hr />
       {/* Subscriptions Section */}
@@ -901,23 +976,164 @@ const saveCycle = async (id) => {
         <table className="subscription-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Cartons/Week</th>
-              <th>Egg Cycle</th>
-              <th>Pickup Site</th>
-              <th>Total Amount</th>
-              <th>Donations</th>
+            <th>Name</th>
+            <th>Cartons/Week</th>
+            <th>Cycle</th>
+            <th>Pickup Site</th>
+            <th>Total Amount</th>
+            <th>Donation Cartons</th>
+            <th>Secondary Email</th>
+            <th>Additional Notes</th>
+            <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {currentSubscriptions.map((sub, index) => (
-              <tr key={index}>
-                <td>{sub.name}</td>
-                <td>{sub.cartons_per_week}</td>
-                <td>{sub.egg_cycle}</td>
-                <td>{sub.pickup_site}</td>
-                <td>${parseFloat(sub.total_amount).toFixed(2)}</td>
-                <td>{sub.donation_cartons || 0}</td>
+              <tr key={sub.id || index}>
+                {/* Name */}
+                <td>
+                  {editingSubId === sub.id ? (
+                    <input
+                      type="text"
+                      value={editedSubscription.name}
+                      onChange={(e) =>
+                        setEditedSubscription({ ...editedSubscription, name: e.target.value })
+                      }
+                    />
+                  ) : (
+                    sub.name
+                  )}
+                </td>
+                
+                {/* Cartons per Week */}
+                <td>
+                  {editingSubId === sub.id ? (
+                    <input
+                      type="number"
+                      value={editedSubscription.cartons_per_week}
+                      onChange={(e) =>
+                        setEditedSubscription({ ...editedSubscription, cartons_per_week: e.target.value })
+                      }
+                    />
+                  ) : (
+                    sub.cartons_per_week
+                  )}
+                </td>
+                
+                {/* Cycle (use a dropdown so admin can select a different cycle) */}
+                <td>
+                  {editingSubId === sub.id ? (
+                    <select
+                      value={editedSubscription.cycle_id}
+                      onChange={(e) =>
+                        setEditedSubscription({ ...editedSubscription, cycle_id: e.target.value })
+                      }
+                    >
+                      <option value="">Select Cycle</option>
+                      {cycles.map((cycle) => (
+                        <option key={cycle.cycle_id} value={cycle.cycle_id}>
+                          {cycle.cycle_name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    sub.egg_cycle
+                  )}
+                </td>
+                
+                {/* Pickup Site (dropdown as well) */}
+                <td>
+                  {editingSubId === sub.id ? (
+                    <select
+                      value={editedSubscription.pickup_site}
+                      onChange={(e) =>
+                        setEditedSubscription({ ...editedSubscription, pickup_site: e.target.value })
+                      }
+                    >
+                      <option value="">Select Site</option>
+                      {sites.map((site) => (
+                        <option key={site.site_id} value={site.site_id}>
+                          {site.site_name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    sub.pickup_site
+                  )}
+                </td>
+                
+                {/* Total Amount */}
+                <td>
+                  {editingSubId === sub.id ? (
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editedSubscription.total_amount}
+                      onChange={(e) =>
+                        setEditedSubscription({ ...editedSubscription, total_amount: e.target.value })
+                      }
+                    />
+                  ) : (
+                    `$${parseFloat(sub.total_amount).toFixed(2)}`
+                  )}
+                </td>
+                
+                {/* Donation Cartons */}
+                <td>
+                  {editingSubId === sub.id ? (
+                    <input
+                      type="number"
+                      value={editedSubscription.donation_cartons}
+                      onChange={(e) =>
+                        setEditedSubscription({ ...editedSubscription, donation_cartons: e.target.value })
+                      }
+                    />
+                  ) : (
+                    sub.donation_cartons || 0
+                  )}
+                </td>
+                
+                {/* Secondary Email */}
+                <td>
+                  {editingSubId === sub.id ? (
+                    <input
+                      type="text"
+                      value={editedSubscription.second_email}
+                      onChange={(e) =>
+                        setEditedSubscription({ ...editedSubscription, second_email: e.target.value })
+                      }
+                    />
+                  ) : (
+                    sub.second_email || ''
+                  )}
+                </td>
+                
+                {/* Additional Notes */}
+                <td>
+                  {editingSubId === sub.id ? (
+                    <input
+                      type="text"
+                      value={editedSubscription.additional_notes}
+                      onChange={(e) =>
+                        setEditedSubscription({ ...editedSubscription, additional_notes: e.target.value })
+                      }
+                    />
+                  ) : (
+                    sub.additional_notes || ''
+                  )}
+                </td>
+                
+                {/* Actions */}
+                <td>
+                  {editingSubId === sub.id ? (
+                    <>
+                      <button onClick={() => saveEditedSubscription(sub.id)}>Save</button>
+                      <button onClick={cancelEditing}>Cancel</button>
+                    </>
+                  ) : (
+                    <button onClick={() => startEditing(sub)}>Edit</button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

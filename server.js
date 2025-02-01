@@ -475,25 +475,23 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
   }
 });
 
-
 // Fetch subscriptions for admin
 app.get('/api/admin/subscriptions', (req, res) => {
-    const query = `
-      SELECT s.user_id, s.name, s.cartons_per_week, s.donation_cartons, c.cycle_name AS egg_cycle,
-            st.site_name AS pickup_site, s.total_amount, s.cycle_id
-      FROM subscriptions s
-      JOIN cycles c ON s.cycle_id = c.cycle_id
-      JOIN sites st ON s.pickup_site = st.site_id
-    `;
-  
-    pool.query(query, (err, result) => {
-      if (err) {
-        console.error('Error fetching subscriptions:', err);
-        return res.status(500).json({ error: 'Error fetching subscriptions' });
-      }
-      res.json(result.rows);
-    });
+  const query = `
+    SELECT s.id, s.user_id, s.name, s.second_email, s.cartons_per_week, s.donation_cartons, 
+           c.cycle_name AS egg_cycle, st.site_name AS pickup_site, s.total_amount, s.cycle_id
+    FROM subscriptions s
+    JOIN cycles c ON s.cycle_id = c.cycle_id
+    JOIN sites st ON s.pickup_site = st.site_id
+  `;
+  pool.query(query, (err, result) => {
+    if (err) {
+      console.error('Error fetching subscriptions:', err);
+      return res.status(500).json({ error: 'Error fetching subscriptions' });
+    }
+    res.json(result.rows);
   });
+});
 
   app.get('/api/waitlist/:email', async (req, res) => {
     const { email } = req.params;
@@ -665,7 +663,7 @@ app.get('/api/admin/download-all-orders', async (req, res) => {
   try {
     // fetch subscriptions from PostgreSQL
     const query = `
-      SELECT s.user_id, s.name, s.cartons_per_week, s.donation_cartons, c.cycle_name AS egg_cycle,
+      SELECT s.user_id, s.created_at, s.name, s.second_email, s.additional_notes, s.cartons_per_week, s.donation_cartons, c.cycle_name AS egg_cycle,
              st.site_name AS pickup_site, s.total_amount, s.cycle_id
       FROM subscriptions s
       JOIN cycles c ON s.cycle_id = c.cycle_id
@@ -675,14 +673,30 @@ app.get('/api/admin/download-all-orders', async (req, res) => {
     const subscriptions = result.rows;
 
     // fetch user emails from Firebase
+    // const userPromises = subscriptions.map(async (sub) => {
+    //   const userRecord = await admin.auth().getUser(sub.user_id);
+    //   return {
+    //     ...sub,
+    //     email: userRecord.email
+    //   };
+    // });
+    // const subscriptionsWithEmails = await Promise.all(userPromises);
     const userPromises = subscriptions.map(async (sub) => {
-      const userRecord = await admin.auth().getUser(sub.user_id);
-      return {
-        ...sub,
-        email: userRecord.email
-      };
+      if (!sub.user_id || sub.user_id.trim() === '') {
+        // Return the subscription with a default email if user_id is invalid
+        return { ...sub, email: 'unknown@gmail.com' };
+      }
+      try {
+        const userRecord = await admin.auth().getUser(sub.user_id);
+        return { ...sub, email: userRecord.email };
+      } catch (error) {
+        console.error(`Error fetching user for subscription with user_id=${sub.user_id}:`, error);
+        // Fallback value if fetching the user fails
+        return { ...sub, email: 'unknown@example.com' };
+      }
     });
-    const subscriptionsWithEmails = await Promise.all(userPromises);
+    
+    const subscriptionsWithEmails = await Promise.all(userPromises);    
 
     // create Excel file
     const workbook = xlsx.utils.book_new();
@@ -802,6 +816,52 @@ app.post('/api/closest-site', (req, res) => {
   });
 });
 
+app.put('/api/admin/subscriptions/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, cartons_per_week, donation_cartons, second_email, additional_notes, total_amount, cycle_id, pickup_site } = req.body;
+  
+  // Validate required fields
+  if (!name || !cartons_per_week || total_amount == null || !cycle_id || !pickup_site) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+  
+  const query = `
+    UPDATE subscriptions
+    SET name = $1,
+        cartons_per_week = $2,
+        donation_cartons = $3,
+        second_email = $4,
+        additional_notes = $5,
+        total_amount = $6,
+        cycle_id = $7,
+        pickup_site = $8
+    WHERE id = $9
+    RETURNING *;
+  `;
+  
+  try {
+    const result = await pool.query(query, [
+      name,
+      parseInt(cartons_per_week, 10),
+      parseInt(donation_cartons, 10) || 0,
+      second_email || '',
+      additional_notes || '',
+      parseFloat(total_amount),
+      parseInt(cycle_id, 10),
+      parseInt(pickup_site, 10),
+      id
+    ]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Subscription not found" });
+    }
+    return res.status(200).json({ message: "Subscription updated", subscription: result.rows[0] });
+  } catch (err) {
+    console.error("Error updating subscription:", err);
+    return res.status(500).json({ error: "Error updating subscription" });
+  }
+});
+
+
 // Edit an existing site
 app.put('/api/admin/sites/:id', (req, res) => {
   const { site_name, site_address, site_instructions, pickup_start_day, pickup_deadline_day } = req.body;
@@ -877,7 +937,14 @@ app.get('/get-subscriptions/:userId', (req, res) => {
   const { userId } = req.params;
 
   const query = `
-    SELECT s.cartons_per_week, c.cycle_name AS egg_cycle, site.site_address AS pickup_site, s.total_amount
+    SELECT 
+      s.cartons_per_week, 
+      c.cycle_name AS egg_cycle, 
+      c.start_date, 
+      c.end_date, 
+      site.site_address AS pickup_site, 
+      site.site_instructions, 
+      s.total_amount
     FROM subscriptions s
     JOIN cycles c ON s.cycle_id = c.cycle_id
     JOIN sites site ON s.pickup_site = site.site_id
@@ -1099,6 +1166,28 @@ app.get('/api/admin/download-orders/:cycleId/:siteId', (req, res) => {
     }
   });
   
+  app.get('/api/admin/download-waitlist', async (req, res) => {
+    try {
+      const query = 'SELECT * FROM waitlist';
+      const result = await pool.query(query);
+      const waitlistEntries = result.rows;
+  
+      const workbook = xlsx.utils.book_new();
+      const worksheet = xlsx.utils.json_to_sheet(waitlistEntries);
+      xlsx.utils.book_append_sheet(workbook, worksheet, 'Waitlist');
+  
+      const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+  
+      res.json({
+        success: true,
+        filename: 'waitlist.xlsx',
+        data: buffer.toString('base64')
+      });
+    } catch (error) {
+      console.error('Error downloading waitlist:', error);
+      res.status(500).json({ error: 'Error downloading waitlist' });
+    }
+  });  
 
 // Fetch total cartons for a specific cycle and site
 app.get('/api/admin/total-cartons/:cycleId/:siteId', (req, res) => {

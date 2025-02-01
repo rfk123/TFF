@@ -157,6 +157,22 @@ textarea {
   background-color: #ecf0f1;
 }
 
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+}
+
+.pagination li {
+  margin: 0;
+}
+
+.pagination button {
+  padding: 0.3rem 0.6rem;
+}
+
 @media (max-width: 768px) {
   table th, table td {
       font-size: 0.9rem;
