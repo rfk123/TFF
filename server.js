@@ -939,6 +939,7 @@ app.get('/get-subscriptions/:userId', (req, res) => {
   const query = `
     SELECT 
       s.cartons_per_week, 
+      s.donation_cartons,
       c.cycle_name AS egg_cycle, 
       c.start_date, 
       c.end_date, 

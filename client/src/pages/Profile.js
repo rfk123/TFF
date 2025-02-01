@@ -55,10 +55,10 @@ const Profile = () => {
                   <strong>Egg Cycle:</strong> {subscription.egg_cycle}
                 </p>
                 <p>
-                  <strong>Cycle Start Date:</strong> {new Date(subscription.start_date).toLocaleDateString()}
+                  <strong>Pickup Site:</strong> {subscription.pickup_site}
                 </p>
                 <p>
-                  <strong>Cycle End Date:</strong> {new Date(subscription.end_date).toLocaleDateString()}
+                  <strong>Cycle Dates:</strong> {new Date(subscription.start_date).toLocaleDateString()} - {new Date(subscription.end_date).toLocaleDateString()}
                 </p>
                 <p>
                   <strong>Site Instructions:</strong> {subscription.site_instructions}
@@ -67,7 +67,7 @@ const Profile = () => {
                   <strong>Cartons per Week:</strong> {subscription.cartons_per_week}
                 </p>
                 <p>
-                  <strong>Pickup Site:</strong> {subscription.pickup_site}
+                    <strong>Donated Cartons:</strong> {subscription.donation_cartons}
                 </p>
                 <p>
                   <strong>Total Amount Paid:</strong> ${subscription.total_amount}
