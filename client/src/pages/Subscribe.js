@@ -100,36 +100,25 @@ const SubscribeForm = () => {
     }, [formData.cartonsPerWeek, formData.wantsToDonate, formData.donationCartons, formData.eggCycle, formData.pickupSite, remainingWeeks]);
 
     const fetchCurrentCycles = async () => {
-        try {
-            const response = await fetch('/api/cycles');  
-            const cycles = await response.json();
+      try {
+        const response = await fetch('/api/cycles');
+        const cycles = await response.json();
     
-            const currentDate = new Date();
-            const filteredCycles = cycles.filter(cycle => {
-                const startDate = new Date(cycle.start_date);
-                const endDate = new Date(cycle.end_date);
+        // New logic: filter cycles based solely on the is_active flag
+        const activeCycles = cycles.filter(cycle => cycle.is_active);
     
-                const twoWeeksBeforeStart = new Date(startDate);
-                twoWeeksBeforeStart.setDate(startDate.getDate() - 28);
-    
-                const twoWeeksBeforeEnd = new Date(endDate);
-                twoWeeksBeforeEnd.setDate(endDate.getDate() - 14);
-    
-                return currentDate >= twoWeeksBeforeStart && currentDate <= twoWeeksBeforeEnd;
-            });
-            if(filteredCycles.length === 0){
-              setNoCurrentCycle(true);
-            } else { 
-              setAvailableCycles(filteredCycles);
-              setNoCurrentCycle(false);
-            }
-        } catch (error) {
-            console.error('Error fetching cycles:', error);
-        } finally {
-          setLoadingCycles(false);
+        if (activeCycles.length === 0) {
+          setNoCurrentCycle(true);
+        } else { 
+          setAvailableCycles(activeCycles);
+          setNoCurrentCycle(false);
         }
-    };
-    
+      } catch (error) {
+        console.error('Error fetching cycles:', error);
+      } finally {
+        setLoadingCycles(false);
+      }
+    };    
 
     const fetchSites = async () => {
         try {

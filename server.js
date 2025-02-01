@@ -882,6 +882,26 @@ app.put('/api/admin/sites/:id', (req, res) => {
   });
 });
 
+app.put('/api/admin/cycles/:id/toggle', async (req, res) => {
+  const { id } = req.params;
+  const query = `
+    UPDATE cycles 
+    SET is_active = NOT COALESCE(is_active, false)
+    WHERE cycle_id = $1
+    RETURNING *;
+  `;
+  try {
+    const result = await pool.query(query, [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Cycle not found' });
+    }
+    res.json({ message: 'Cycle status updated', cycle: result.rows[0] });
+  } catch (err) {
+    console.error('Error toggling cycle status:', err);
+    res.status(500).json({ error: 'Error toggling cycle status' });
+  }
+});
+
 // Delete a cycle
 app.delete('/api/admin/cycles/:id', async (req, res) => {
   const { id } = req.params;
@@ -1008,15 +1028,16 @@ app.get('/api/admin/carton-price', (req, res) => {
 });
 
 app.get('/api/cycles', (req, res) => {
-    const query = 'SELECT cycle_id, cycle_name, start_date, end_date, number_of_weeks FROM cycles';
-    pool.query(query, (err, result) => {
-        if (err) {
-            console.error('Error fetching cycles:', err);
-            return res.status(500).send('Error fetching cycles');
-        }
-        res.json(result.rows); 
-    });
+  const query = 'SELECT cycle_id, cycle_name, start_date, end_date, number_of_weeks, is_active FROM cycles';
+  pool.query(query, (err, result) => {
+      if (err) {
+          console.error('Error fetching cycles:', err);
+          return res.status(500).send('Error fetching cycles');
+      }
+      res.json(result.rows); 
+  });
 });
+
 
 // Download orders for a specific cycle and site
 app.get('/api/admin/download-orders/:cycleId/:siteId', (req, res) => {
@@ -1044,10 +1065,8 @@ app.get('/api/admin/download-orders/:cycleId/:siteId', (req, res) => {
         return res.status(404).json({ error: 'No subscriptions found for this cycle and location' });
       }
   
-      // calculate total number of cartons
       const totalCartons = result.rows.reduce((sum, sub) => sum + sub.cartons_per_week, 0);
   
-      // prep the workbook and sheet
       const workbook = xlsx.utils.book_new();
   
       const cycleName = result.rows[0].cycle_name.replace(/[^\w\s]/gi, '_');
@@ -1072,10 +1091,8 @@ app.get('/api/admin/download-orders/:cycleId/:siteId', (req, res) => {
   
       xlsx.utils.book_append_sheet(workbook, worksheet, cycleName);
   
-      // write the workbook to buffer
       const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
   
-      // send buffer, totalCartons, and results in the response
       res.json({
         success: true,
         totalCartons,
@@ -1085,6 +1102,89 @@ app.get('/api/admin/download-orders/:cycleId/:siteId', (req, res) => {
     });
   });  
   
+app.get('/api/admin/download-subscriptions/:cycleId/:siteId', async (req, res) => {
+  try {
+    const cycleId = parseInt(req.params.cycleId, 10);
+    const siteId = parseInt(req.params.siteId, 10);
+    if (isNaN(cycleId) || isNaN(siteId)) {
+      return res.status(400).json({ error: 'Invalid cycle ID or site ID' });
+    }
+
+    const query = `
+      SELECT 
+        s.user_id, 
+        s.name, 
+        s.cartons_per_week, 
+        s.donation_cartons, 
+        s.second_email, 
+        s.additional_notes, 
+        s.total_amount,
+        c.cycle_name,
+        c.start_date,
+        c.end_date,
+        st.site_name,
+        st.site_address,
+        st.site_instructions
+      FROM subscriptions s
+      JOIN cycles c ON s.cycle_id = c.cycle_id
+      JOIN sites st ON s.pickup_site = st.site_id
+      WHERE s.cycle_id = $1 AND s.pickup_site = $2
+    `;
+    const result = await pool.query(query, [cycleId, siteId]);
+    const subscriptions = result.rows;
+    if (subscriptions.length === 0) {
+      return res.status(404).json({ error: 'No subscriptions found for this cycle and site.' });
+    }
+
+    const subscriptionsWithEmail = await Promise.all(
+      subscriptions.map(async (sub) => {
+        let userEmail = '';
+        try {
+          if (sub.user_id) {
+            const userRecord = await admin.auth().getUser(sub.user_id);
+            userEmail = userRecord.email;
+          }
+        } catch (error) {
+          console.error(`Error fetching user for user_id=${sub.user_id}:`, error);
+          userEmail = '[unknown or deleted user]';
+        }
+        return { ...sub, user_email: userEmail };
+      })
+    );
+
+    const workbook = xlsx.utils.book_new();
+    const worksheetData = subscriptionsWithEmail.map((sub) => ({
+      "Name": sub.name,
+      "User ID": sub.user_id,
+      "Email": sub.user_email,
+      "Cartons/Week": sub.cartons_per_week,
+      "Donation Cartons": sub.donation_cartons,
+      "Total Amount": sub.total_amount,
+      "Second Email": sub.second_email || '',
+      "Additional Notes": sub.additional_notes || '',
+      "Cycle Name": sub.cycle_name,
+      "Cycle Start": sub.start_date,
+      "Cycle End": sub.end_date,
+      "Site Name": sub.site_name,
+      "Site Address": sub.site_address,
+      "Site Instructions": sub.site_instructions
+    }));
+    const worksheet = xlsx.utils.json_to_sheet(worksheetData);
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Subscriptions');
+
+    const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    const fileName = `subscriptions-cycle-${cycleId}-site-${siteId}.xlsx`;
+    res.json({
+      success: true,
+      filename: fileName,
+      data: buffer.toString('base64')
+    });
+  } catch (err) {
+    console.error('Error downloading subscriptions:', err);
+    res.status(500).json({ error: 'Server error downloading subscriptions' });
+  }
+});
+
   app.get('/api/admin/download-cycle-orders/:cycleId', async (req, res) => {
     try {
       const cycleId = parseInt(req.params.cycleId, 10);

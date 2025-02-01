@@ -48,7 +48,7 @@ const Profile = () => {
         <h1 className="profile-title">Your Profile</h1>
         {subscriptions.length > 0 ? (
           <div className="subscription-list">
-            <h2>Your Active Subscriptions</h2>
+            <h2>Your Subscriptions</h2>
             {subscriptions.map((subscription, index) => (
               <div className="subscription-details" key={index}>
                 <p>
@@ -58,7 +58,7 @@ const Profile = () => {
                   <strong>Pickup Site:</strong> {subscription.pickup_site}
                 </p>
                 <p>
-                  <strong>Cycle Dates:</strong> {new Date(subscription.start_date).toLocaleDateString()} - {new Date(subscription.end_date).toLocaleDateString()}
+                  <strong>Cycle Dates:</strong> {new Date(subscription.start_date).toLocaleDateString('en-US', { timeZone: 'UTC' })} - {new Date(subscription.end_date).toLocaleDateString('en-US', { timeZone: 'UTC' })}
                 </p>
                 <p>
                   <strong>Site Instructions:</strong> {subscription.site_instructions}

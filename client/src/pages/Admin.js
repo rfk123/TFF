@@ -35,6 +35,9 @@ const Admin = () => {
 
   const [editingSubId, setEditingSubId] = useState(null);
   const [editedSubscription, setEditedSubscription] = useState({});
+  const [selectedCycleForSiteDownload, setSelectedCycleForSiteDownload] = useState('');
+  const [selectedSiteForDownload, setSelectedSiteForDownload] = useState('');
+
 
   const handleSendMassEmail = async () => {
     if (!emailMessage.trim()) {
@@ -409,16 +412,12 @@ const saveCycle = async (id) => {
       const response = await fetch(
         `/api/admin/download-orders/${encodedCycleId}/${encodedSiteId}`
       );
-      const data = await response.json();
-
       if (!response.ok) {
         throw new Error(`Failed to download orders: ${response.statusText}`);
       }
-
+      const data = await response.json();
       console.log('Total Cartons Needed:', data.totalCartons);
-      setTotalCartons(data.totalCartons);
-
-      // download the file
+  
       const blob = new Blob(
         [
           new Uint8Array(
@@ -428,8 +427,7 @@ const saveCycle = async (id) => {
           ),
         ],
         {
-          type:
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         }
       );
       const url = window.URL.createObjectURL(blob);
@@ -442,7 +440,7 @@ const saveCycle = async (id) => {
     } catch (error) {
       console.error('Error downloading the orders:', error);
     }
-  };
+  };  
 
   const handleCycleNameChange = (id, newName) => {
     setCycles(cycles.map((cycle) => 
@@ -639,6 +637,61 @@ const saveCycle = async (id) => {
     }
   };
   
+  const toggleCycleStatus = async (cycleId) => {
+    try {
+      const response = await fetch(`/api/admin/cycles/${cycleId}/toggle`, {
+        method: 'PUT'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        alert(`Cycle status updated: ${data.cycle.is_active ? 'Active' : 'Inactive'}`);
+        // Refresh cycles
+        fetchCycles();
+      } else {
+        alert('Failed to toggle cycle status');
+      }
+    } catch (error) {
+      console.error('Error toggling cycle status:', error);
+      alert('Error toggling cycle status');
+    }
+  };
+  
+  const downloadSubscriptionsByLocation = async (cycleId, siteId) => {
+    try {
+      const encodedCycleId = encodeURIComponent(cycleId);
+      const encodedSiteId = encodeURIComponent(siteId);
+      const response = await fetch(`/api/admin/download-subscriptions/${encodedCycleId}/${encodedSiteId}`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`Failed to download subscriptions: ${response.statusText}`);
+      }
+      const blob = new Blob(
+        [
+          new Uint8Array(
+            atob(data.data)
+              .split('')
+              .map((c) => c.charCodeAt(0))
+          ),
+        ],
+        {
+          type:
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        }
+      );
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', data.filename);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading subscriptions:', error);
+      alert('Error downloading subscriptions');
+    }
+  };  
+
   const downloadCycleOrders = async () => {
     if (!selectedCycleForDownload) {
       alert('Please select a cycle first!');
@@ -858,7 +911,7 @@ const saveCycle = async (id) => {
       <hr />
       {/* Download All Orders Section */}
       <section>
-        <h2>Download Orders for a Specific Cycle</h2>
+        <h2>Download Orders</h2>
 
         <label>Select Cycle to Download:</label>
         <select
@@ -877,6 +930,32 @@ const saveCycle = async (id) => {
         <button onClick={downloadCycleOrders} disabled={!selectedCycleForDownload}>
           Download This Cycle's Orders
         </button>
+        <hr />
+        <h2>Download Subscriptions for a Specific Site and Cycle</h2>
+          <label>Select Cycle:</label>
+          <select onChange={(e) => setSelectedCycleForDownload(e.target.value)}>
+            <option value="">-- Select Cycle --</option>
+            {cycles.map((cycle) => (
+              <option key={cycle.cycle_id} value={cycle.cycle_id}>
+                {cycle.cycle_name} ({new Date(cycle.start_date).toLocaleDateString()} - {new Date(cycle.end_date).toLocaleDateString()})
+              </option>
+            ))}
+          </select>
+          <label>Select Site:</label>
+          <select onChange={(e) => setSelectedLocation(e.target.value)}>
+            <option value="">-- Select Site --</option>
+            {sites.map((site) => (
+              <option key={site.site_id} value={site.site_id}>
+                {site.site_name} - {site.site_address}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => downloadSubscriptionsByLocation(selectedCycleForDownload, selectedLocation)}
+            disabled={!selectedCycleForDownload || !selectedLocation}
+          >
+            Download All Subscriptions for This Site
+          </button>
         <hr />
         <button onClick={downloadAllOrders}>Download All Subscriptions</button>
         <hr />
@@ -1257,53 +1336,62 @@ const saveCycle = async (id) => {
 
         <h3>Existing Cycles</h3>
         <table className="cycle-table">
-        <thead>
+          <thead>
             <tr>
-            <th>Cycle Name</th>
-            <th>Start Date</th>
-            <th>End Date</th>
-            <th>Number of Weeks</th>
-            <th>Actions</th>
+              <th>Cycle Name</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Number of Weeks</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
-        </thead>
-        <tbody>
+          </thead>
+          <tbody>
             {cycles.map((cycle) => (
-            <tr key={cycle.cycle_id}>
+              <tr key={cycle.cycle_id}>
                 <td>
-                <input
+                  <input
                     type="text"
                     value={cycle.cycle_name}
                     onChange={(e) => handleCycleNameChange(cycle.cycle_id, e.target.value)}
-                />
+                  />
                 </td>
                 <td>
-                <input
+                  <input
                     type="date"
                     value={cycle.start_date.slice(0, 10)}
                     onChange={(e) => handleCycleDateChange(cycle.cycle_id, e.target.value, 'start_date')}
-                />
+                  />
                 </td>
                 <td>
-                <input
+                  <input
                     type="date"
                     value={cycle.end_date.slice(0, 10)}
                     onChange={(e) => handleCycleDateChange(cycle.cycle_id, e.target.value, 'end_date')}
-                />
+                  />
                 </td>
                 <td>
-                <input
+                  <input
                     type="number"
                     value={cycle.number_of_weeks}
                     onChange={(e) => handleCycleDateChange(cycle.cycle_id, e.target.value, 'number_of_weeks')}
-                />
+                  />
+                </td>
+                <td style={{ color: cycle.is_active ? 'green' : 'red' }}>
+                  {cycle.is_active ? 'Active' : 'Inactive'}
                 </td>
                 <td>
-                <button onClick={() => saveCycle(cycle.cycle_id)}>Save</button>
-                <button onClick={() => deleteCycle(cycle.cycle_id)}>Delete</button>
+                  {/* Existing save/delete buttons */}
+                  <button onClick={() => saveCycle(cycle.cycle_id)}>Save</button>
+                  <button onClick={() => deleteCycle(cycle.cycle_id)}>Delete</button>
+                  {/* New toggle button */}
+                  <button onClick={() => toggleCycleStatus(cycle.cycle_id)}>
+                    {cycle.is_active ? 'Stop Cycle' : 'Start Cycle'}
+                  </button>
                 </td>
-            </tr>
+              </tr>
             ))}
-        </tbody>
+          </tbody>
         </table>
       </section>
       <hr />
