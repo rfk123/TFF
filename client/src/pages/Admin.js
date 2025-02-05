@@ -484,6 +484,12 @@ const saveCycle = async (id) => {
   }, []);
 
   useEffect(() => {
+    if (selectedCycle && selectedLocation) {
+      fetchTotalCartons(selectedCycle, selectedLocation);
+    }
+  }, [selectedCycle, selectedLocation]);
+  
+  useEffect(() => {
     setCurrentPage(1);
   }, [selectedCycleForTable]);
 
@@ -1005,7 +1011,8 @@ const saveCycle = async (id) => {
         </div>
         {/* For Pickup Sheets and Totals */}
         <div className="cycle-summary">
-          <h2>For Pickup Sheet and totals:</h2>
+          <h2>For Pickup Sheet and Totals:</h2>
+          
           <label>Select Cycle:</label>
           <select onChange={(e) => setSelectedCycle(e.target.value)}>
             <option value="">Select a cycle</option>
@@ -1033,15 +1040,10 @@ const saveCycle = async (id) => {
           {selectedCycle && selectedLocation && (
             <>
               <p>
-                <strong>
-                  Total Cartons Needed (press the download button to view):
-                </strong>{' '}
-                {totalCartons}
+                <strong>Total Cartons Needed:</strong> {totalCartons}
               </p>
               <button
-                onClick={() =>
-                  downloadOrdersByLocation(selectedCycle, selectedLocation)
-                }
+                onClick={() => downloadOrdersByLocation(selectedCycle, selectedLocation)}
                 disabled={!selectedCycle || !selectedLocation}
               >
                 Download Printable File
