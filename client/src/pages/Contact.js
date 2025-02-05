@@ -27,7 +27,7 @@ const Contact = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, subject, message }), 
+        body: JSON.stringify({ name, email, subject, message, created_at: new Date().toISOString()}), 
       });
 
       if (response.ok) {

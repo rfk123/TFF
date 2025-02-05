@@ -122,7 +122,15 @@ const Admin = () => {
     try {
       const response = await fetch('/api/admin/questions');
       const data = await response.json();
-      setQuestions(data);
+      const formattedData = data.map((question) => ({
+        ...question,
+        created_at: new Date(question.created_at).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        }),
+      }));
+      setQuestions(formattedData);
     } catch (error) {
       console.error('Error fetching questions:', error);
     }
@@ -1261,6 +1269,7 @@ const saveCycle = async (id) => {
               <th>Email</th>
               <th>Subject</th>
               <th>Message</th>
+              <th>Date Sent</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -1271,6 +1280,7 @@ const saveCycle = async (id) => {
                 <td>{question.email}</td>
                 <td>{question.subject}</td>
                 <td>{question.message}</td>
+                <td>{question.created_at}</td>
                 <td>
                   <button onClick={() => resolveQuestion(question.id)}>
                     Remove
