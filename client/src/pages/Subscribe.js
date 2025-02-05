@@ -46,6 +46,18 @@ const NoCycleMessage = () => {
   );
 };
 
+// New component for the late subscription warning popup
+const LateSubscriptionWarning = ({ onClose }) => (
+  <div className="late-subscription-warning-overlay">
+    <div className="late-subscription-warning">
+      <p>
+        Orders for 2/6 are closed but we can accept late subscriptions between now and noon on Tuesday 2/11.
+        Please note that late subscriptions will be charged the full amount.
+      </p>
+      <button onClick={onClose}>Close</button>
+    </div>
+  </div>
+);
 
 const SubscribeForm = () => {
     const [formData, setFormData] = useState({
@@ -67,6 +79,8 @@ const SubscribeForm = () => {
     const [showDonationInfo, setShowDonationInfo] = useState(false); 
     const [showTotal, setShowTotal] = useState(false); 
     const [cartonPrice, setCartonPrice] = useState(6.50);  
+    const [showLateSubscriptionWarning, setShowLateSubscriptionWarning] = useState(false);
+    const [showLateSubscriptionBanner, setShowLateSubscriptionBanner] = useState(false);
 
     const [loadingCycles, setLoadingCycles] = useState(true);
     const [noCurrentCycle, setNoCurrentCycle] = useState(false);
@@ -82,6 +96,17 @@ const SubscribeForm = () => {
         fetchCurrentCycles();
         fetchSites();  // fetch the available sites from the backend
         fetchCartonPrice();  // fetch the latest carton price
+
+        // Check if we are in the “late subscription” window.
+        // adjust dates as needed
+        const now = new Date();
+        
+        const closedDate = new Date('2025-01-06T23:59:59');
+        const lateDeadline = new Date('2025-02-11T12:00:00');
+        if (now > closedDate && now < lateDeadline) {
+          setShowLateSubscriptionWarning(true);
+          setShowLateSubscriptionBanner(true);
+        }
     }, []);
 
     useEffect(() => {
@@ -98,6 +123,15 @@ const SubscribeForm = () => {
             setShowTotal(false); 
         }
     }, [formData.cartonsPerWeek, formData.wantsToDonate, formData.donationCartons, formData.eggCycle, formData.pickupSite, remainingWeeks]);
+
+    useEffect(() => {
+      const now = new Date();
+      const closedDate = new Date('2025-02-06T23:59:59');
+      const lateDeadline = new Date('2025-02-11T12:00:00');
+      if (now > closedDate && now < lateDeadline) {
+        setShowLateSubscriptionWarning(true);
+      }
+    }, []);
 
     const fetchCurrentCycles = async () => {
       try {
@@ -343,6 +377,17 @@ const SubscribeForm = () => {
             </div>
           ) : (
             <>
+            {showLateSubscriptionWarning && (
+              <LateSubscriptionWarning onClose={() => setShowLateSubscriptionWarning(false)} />
+            )}
+            {showLateSubscriptionBanner && (
+            <div className="late-signup-banner">
+              <p>
+                Orders for 2/6 are closed. Late sign-ups are accepted between now and noon on Tuesday 2/11,
+                and will be charged the full price.
+              </p>
+            </div>
+          )}
           {/* Closest Pickup Location Form */}
           <div className="form-section closest-pickup-form">
             <h2>Find the Closest Pickup Location</h2>

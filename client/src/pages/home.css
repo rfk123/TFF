@@ -1,67 +1,105 @@
-@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Roboto:wght@400;500&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Indie+Flower&family=Lora:wght@400;700&family=Roboto:wght@400;500&display=swap');
 
+/* Home Container */
 .home-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  flex-direction: column;
-  height: 100vh;
-  background-color: #f2f2f2;  
+  min-height: 100vh;
+  padding: 20px;
+  /* Subtle gradient background */
+  background: linear-gradient(135deg, #f7f7f7 0%, #e9ecef 100%);
 }
 
+/* Home Content Box */
 .home-content {
-  text-align: center;
   background: #fff;
-  padding: 2.5rem;
+  padding: 3rem;
   border-radius: 12px;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
   max-width: 600px;
   width: 100%;
-  margin-bottom: 3rem;
+  text-align: center;
+  margin-bottom: 2rem;
 }
 
+/* Heading Styling */
 .home-content h1 {
-  font-family: "Indie Flower", system-ui;
-  font-size: 2.2rem;
-  margin-bottom: 1.5rem;
-  color: #2f4f4f; 
-  font-weight: 1500;
+  font-family: 'Indie Flower', cursive;
+  font-size: 2.8rem;
+  margin-bottom: 1rem;
+  color: #2f4f4f;
+  line-height: 1.2;
 }
 
+/* Paragraph Styling */
 .home-content p {
   font-family: 'Lora', serif;
-  font-size: 1.1rem;
-  margin-bottom: 2.5rem;
-  font-weight: 300;
-  color: #555;  
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  color: #555;
+  line-height: 1.5;
 }
 
+/* Home Buttons Container */
 .home-buttons {
   display: flex;
   justify-content: center;
   gap: 1.5rem;
+  margin-top: 1rem;
 }
 
+/* Primary Button */
 .home-btn {
   padding: 0.9rem 2rem;
-  background-color: #4CAF50; 
+  background-color: #4caf50;
   color: #fff;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   font-size: 1rem;
   text-decoration: none;
   transition: background-color 0.3s ease;
 }
 
 .home-btn:hover {
-  background-color: #45a049;
+  background-color: #43a047;
 }
 
+/* Secondary Button */
 .secondary-btn {
-  background-color: #6c757d;  
+  background-color: #6c757d;
 }
 
 .secondary-btn:hover {
   background-color: #5a6268;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .home-content {
+    padding: 2rem;
+  }
+  
+  .home-content h1 {
+    font-size: 2.4rem;
+  }
+  
+  .home-content p {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-content {
+    padding: 1.5rem;
+  }
+  
+  .home-content h1 {
+    font-size: 2rem;
+  }
+  
+  .home-content p {
+    font-size: 1rem;
+  }
 }

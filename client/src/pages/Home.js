@@ -8,7 +8,6 @@ const Home = () => {
       <div className="home-content">
         <h1>Welcome to Trent Family Farms Ecommerce</h1>
         <p>Pick up farm-fresh eggs from one of our local pickup sites. Ready to subscribe?</p>
-
         <div className="home-buttons">
           <NavLink to="/subscribe" className="home-btn">
             Subscribe for Pickup
