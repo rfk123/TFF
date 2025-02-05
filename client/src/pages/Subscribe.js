@@ -65,7 +65,7 @@ const SubscribeForm = () => {
         eggCycle: '',
         cartonsPerWeek: '',
         pickupSite: '',
-        wantsToDonate: 'full',
+        wantsToDonate: 'no',
         donationCartons: '',
         notes: '',
         secondEmail: '',
