@@ -8,6 +8,7 @@ import Contact from './pages/Contact';
 import Signup from './components/Auth/Signup';
 import Login from './components/Auth/Login';
 import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
 import Success from './pages/Success';  
 import Cancel from './pages/Cancel'; 
@@ -69,6 +70,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
             </ProtectedRoute>
           }
         />

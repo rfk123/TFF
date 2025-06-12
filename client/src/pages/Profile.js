@@ -12,6 +12,7 @@ const Profile = () => {
     const fetchSubscriptions = async () => {
       try {
         const user = auth.currentUser;
+        await user.reload();
         if (user) {
           const response = await fetch(`/get-subscriptions/${user.uid}`);
           if (response.ok) {
@@ -38,46 +39,33 @@ const Profile = () => {
     return <div>Loading your subscriptions...</div>;
   }
 
-  if (error) {
-    return <div className="no-subscription">{error}</div>;
-  }
-
   return (
     <div className="profile-container">
       <div className="profile-content">
         <h1 className="profile-title">Your Profile</h1>
-        {subscriptions.length > 0 ? (
-          <div className="subscription-list">
-            <h2>Your Subscriptions</h2>
-            {subscriptions.map((subscription, index) => (
-              <div className="subscription-details" key={index}>
-                <p>
-                  <strong>Egg Cycle:</strong> {subscription.egg_cycle}
-                </p>
-                <p>
-                  <strong>Pickup Site:</strong> {subscription.pickup_site}
-                </p>
-                <p>
-                  <strong>Cycle Dates:</strong> {new Date(subscription.start_date).toLocaleDateString('en-US', { timeZone: 'UTC' })} - {new Date(subscription.end_date).toLocaleDateString('en-US', { timeZone: 'UTC' })}
-                </p>
-                <p>
-                  <strong>Site Instructions:</strong> {subscription.site_instructions}
-                </p>
-                <p>
-                  <strong>Cartons per Week:</strong> {subscription.cartons_per_week}
-                </p>
-                <p>
-                    <strong>Donated Cartons:</strong> {subscription.donation_cartons}
-                </p>
-                <p>
-                  <strong>Total Amount Paid:</strong> ${subscription.total_amount}
-                </p>
-                <hr /> 
-              </div>
-            ))}
-          </div>
+        {/* Subscriptions */}
+        {error ? (
+          <div className="no-subscription">{error}</div>
         ) : (
-          <div className="no-subscription">No active subscriptions found.</div>
+          subscriptions.length > 0 ? (
+            <div className="subscription-list">
+              <h2>Your Subscriptions</h2>
+              {subscriptions.map((subscription, index) => (
+                <div className="subscription-details" key={index}>
+                  <p><strong>Egg Cycle:</strong> {subscription.egg_cycle}</p>
+                  <p><strong>Pickup Site:</strong> {subscription.pickup_site}</p>
+                  <p><strong>Cycle Dates:</strong> {new Date(subscription.start_date).toLocaleDateString('en-US', { timeZone: 'UTC' })} - {new Date(subscription.end_date).toLocaleDateString('en-US', { timeZone: 'UTC' })}</p>
+                  <p><strong>Site Instructions:</strong> {subscription.site_instructions}</p>
+                  <p><strong>Cartons per Week:</strong> {subscription.cartons_per_week}</p>
+                  <p><strong>Donated Cartons:</strong> {subscription.donation_cartons}</p>
+                  <p><strong>Total Amount Paid:</strong> ${subscription.total_amount}</p>
+                  <hr />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="no-subscription">No active subscriptions found.</div>
+          )
         )}
       </div>
     </div>

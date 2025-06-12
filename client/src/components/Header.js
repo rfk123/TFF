@@ -67,6 +67,7 @@ const Header = () => {
             {dropdownOpen && (
               <div className="dropdown-menu">
                 <NavLink to="/profile" className="dropdown-item">User Profile</NavLink>
+                <NavLink to="/settings" className="dropdown-item">Settings</NavLink>
                 {!adminLoading && isAdmin && (
                   <NavLink to="/admin" className="dropdown-item">Admin</NavLink>
                 )}
