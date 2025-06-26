@@ -28,6 +28,8 @@ const Admin = () => {
   const [totalCartons, setTotalCartons] = useState(0);
   const [emailMessage, setEmailMessage] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [lastEmailDate, setLastEmailDate] = useState(null);
+  const [lastWaitlistDate, setLastWaitlistDate] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
   const [selectedCycleForDownload, setSelectedCycleForDownload] = useState('');
@@ -59,6 +61,7 @@ const Admin = () => {
       if (response.ok) {
         alert('Mass email sent successfully!');
         setEmailMessage('');
+        await fetchLastMassEmail();
       } else {
         alert('Failed to send mass email.');
       }
@@ -156,6 +159,26 @@ const Admin = () => {
       setCartonPrice(data.carton_price);
     } catch (error) {
       console.error('Error fetching carton price:', error);
+    }
+  };
+  
+  const fetchLastMassEmail = async () => {
+    try {
+      const res = await fetch('/api/admin/last-mass-email');
+      const data = await res.json();
+      if (data.timestamp) {
+        setLastEmailDate(new Date(data.timestamp.toLocaleString()));
+      }
+    } catch (error) {
+      console.error('Error fetching last mass email date:', error);
+    }
+  };
+
+  const fetchLastWaitlistEmail = async () => {
+    const res = await fetch('/api/admin/last-waitlist-email');
+    const data = await res.json();
+    if (data.timestamp) {
+      setLastWaitlistDate(new Date(data.timestamp.toLocaleString()));
     }
   };
 
@@ -473,6 +496,8 @@ const saveCycle = async (id) => {
           fetchSites(),
           fetchCartonPrice(),
           fetchCycles(),
+          fetchLastMassEmail(),
+          fetchLastWaitlistEmail()
         ]);
       } catch (error) {
         console.error('Error loading data:', error);
@@ -891,6 +916,11 @@ const saveCycle = async (id) => {
       <section>
         <h2>Notify Waitlist</h2>
         <button onClick={notifyWaitlist}>Notify All Waitlist Emails</button>
+        {lastWaitlistDate && (
+          <p style={{ fontSize: '0.9em', color: '#777' }}>
+            Last waitlist email sent: {lastWaitlistDate.toLocaleString()}
+          </p>
+        )}
       </section>
       {/* Send Mass Email Section */}
       <section>
@@ -920,6 +950,11 @@ const saveCycle = async (id) => {
           <button type="submit" disabled={sendingEmail}>
             {sendingEmail ? 'Sending...' : 'Send Email'}
           </button>
+          {lastEmailDate && (
+            <p style={{ fontSize: '0.9em', color: '#777' }}>
+              Last sent: {lastEmailDate.toLocaleString()}
+            </p>
+          )}
         </form>
       </section>
       <hr />

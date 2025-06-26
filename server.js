@@ -271,7 +271,7 @@ app.post('/api/admin/notify-waitlist', async (req, res) => {
       const emailsToUpdate = entries.map(e => e.email);
       await pool.query(updateQuery, [emailsToUpdate]);
     }
-
+    await pool.query(`INSERT INTO waitlist_emails (message) VALUES ($1)`, [message]);
     return res.status(200).json({ message: 'All waitlist emails have been notified' });
   } catch (error) {
     console.error('Error notifying waitlist:', error);
@@ -739,43 +739,73 @@ app.post('/api/admin/send-mass-email', async (req, res) => {
   const { message } = req.body;
 
   if (!message) {
-      return res.status(400).json({ error: 'Message content is required' });
+    return res.status(400).json({ error: 'Message content is required' });
   }
 
   try {
-      // fetch users from Firebase
-      const listUsers = async (nextPageToken) => {
-          const users = [];
-          const result = await admin.auth().listUsers(1000, nextPageToken);
-          users.push(...result.users);
+    const result = await pool.query(`
+      SELECT DISTINCT second_email 
+      FROM subscriptions 
+      WHERE second_email IS NOT NULL AND second_email <> ''
+    `);
+    // const result = await pool.query(`SELECT email FROM test_emails`);
+    
+    const emails = result.rows.map(row => row.second_email);
+    // const emails = result.rows.map(row => row.email);
 
-          if (result.pageToken) {
-              users.push(...await listUsers(result.pageToken));
-          }
-
-          return users;
+    const sendPromises = emails.map(email => {
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: 'Important Update from Trent Family Farms',
+        html: `<p>Dear Subscriber,</p><p>${message}</p><p>Best regards,<br>The Farm Team</p>`,
       };
+      return transporter.sendMail(mailOptions);
+    });
 
-      const users = await listUsers();
-      const emails = users.map(user => user.email);
+    await Promise.all(sendPromises);
 
-      // send email to each subscriber
-      const sendPromises = emails.map((email) => {
-          const mailOptions = {
-              from: process.env.EMAIL_USER,
-              to: email,
-              subject: 'Important Update from Trent Family Farms',
-              html: `<p>Dear Customer,</p><p>${message}</p><p>Best regards,<br>The Farm Team</p>`
-          };
-          return transporter.sendMail(mailOptions);
-      });
+    await pool.query(
+      `INSERT INTO mass_emails (message) VALUES ($1)`,
+      [message]
+    );
 
-      await Promise.all(sendPromises);
-
-      res.status(200).json({ success: 'Emails sent successfully' });
+    return res.status(200).json({ success: 'Emails sent successfully' });
   } catch (error) {
-      console.error('Error sending mass email:', error);
-      res.status(500).json({ error: 'Failed to send emails' });
+    console.error('Error sending mass emails:', error);
+    return res.status(500).json({ error: 'Failed to send mass emails' });
+  }
+});
+
+app.get('/api/admin/last-mass-email', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT sent_at FROM mass_emails ORDER BY sent_at DESC LIMIT 1
+    `);
+    if (result.rows.length > 0) {
+      res.json({ timestamp: result.rows[0].sent_at });
+    } else {
+      res.json({ timestamp: null });
+    }
+  } catch (error) {
+    console.error('Error fetching last mass email:', error);
+    res.status(500).json({ error: 'Failed to fetch last email timestamp' });
+  }
+});
+
+app.get('/api/admin/last-waitlist-email', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT sent_at FROM waitlist_emails ORDER BY sent_at DESC LIMIT 1
+    `);
+    if (result.rows.length > 0) {
+      res.json({ timestamp: result.rows[0].sent_at });
+    } else {
+      res.json({ timestamp: null });
+    }
+  } catch (error) {
+    console.error('Error fetching last waitlist email:', error);
+    res.status(500).json({ error: 'Failed to fetch last waitlist email timestamp' });
   }
 });
 
