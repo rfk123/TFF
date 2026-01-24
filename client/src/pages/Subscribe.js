@@ -158,7 +158,8 @@ const SubscribeForm = () => {
         try {
             const response = await fetch('/api/admin/sites');  
             const data = await response.json();
-            setAvailableSites(data);  
+            const activeSites = data.filter((site) => site.is_active !== false);
+            setAvailableSites(activeSites);  
         } catch (error) {
             console.error('Error fetching sites:', error);
         }

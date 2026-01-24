@@ -721,7 +721,7 @@ app.get('/api/admin/download-all-orders', async (req, res) => {
 // Fetch all sites
 app.get('/api/admin/sites', (req, res) => {
   const query = `
-    SELECT site_id, site_name, site_address, site_instructions, pickup_start_day, pickup_deadline_day, lat, lon 
+    SELECT site_id, site_name, site_address, site_instructions, pickup_start_day, pickup_deadline_day, lat, lon, is_active
     FROM sites 
     WHERE lat IS NOT NULL AND lon IS NOT NULL
   `;
@@ -910,6 +910,26 @@ app.put('/api/admin/sites/:id', (req, res) => {
     }
     res.status(200).send('Site updated successfully');
   });
+});
+
+app.put('/api/admin/sites/:id/toggle', async (req, res) => {
+  const { id } = req.params;
+  const query = `
+    UPDATE sites 
+    SET is_active = NOT COALESCE(is_active, true)
+    WHERE site_id = $1
+    RETURNING *;
+  `;
+  try {
+    const result = await pool.query(query, [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Site not found' });
+    }
+    res.json({ message: 'Site status updated', site: result.rows[0] });
+  } catch (err) {
+    console.error('Error toggling site status:', err);
+    res.status(500).json({ error: 'Error toggling site status' });
+  }
 });
 
 app.put('/api/admin/cycles/:id/toggle', async (req, res) => {

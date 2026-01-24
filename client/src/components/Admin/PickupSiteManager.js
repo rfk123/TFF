@@ -66,6 +66,23 @@ const PickupSiteManager = () => {
     }
   };
 
+  const toggleSite = async (id) => {
+    try {
+      const response = await fetch(`/api/admin/sites/${id}/toggle`, {
+        method: 'PUT',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        alert(`Site status updated: ${data.site.is_active ? 'Active' : 'Inactive'}`);
+        fetchSites();
+      } else {
+        alert('Failed to update site status');
+      }
+    } catch (error) {
+      console.error('Error updating site status:', error);
+    }
+  };
+
   return (
     <section>
       <h2>Manage Pickup Sites</h2>
@@ -127,6 +144,7 @@ const PickupSiteManager = () => {
             <th>Site Instructions</th>
             <th>Pickup Start Day</th>
             <th>Pickup Deadline Day</th>
+            <th>Status</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -138,7 +156,13 @@ const PickupSiteManager = () => {
               <td>{site.site_instructions}</td>
               <td>{site.pickup_start_day}</td>
               <td>{site.pickup_deadline_day}</td>
+              <td style={{ color: site.is_active === false ? 'red' : 'green' }}>
+                {site.is_active === false ? 'Inactive' : 'Active'}
+              </td>
               <td>
+                <button onClick={() => toggleSite(site.site_id)}>
+                  {site.is_active === false ? 'Enable' : 'Disable'}
+                </button>
                 <button onClick={() => deleteSite(site.site_id)}>Remove</button>
               </td>
             </tr>
